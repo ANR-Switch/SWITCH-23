@@ -1,0 +1,113 @@
+/**
+* Name: Car
+* Based on the internal empty template. 
+* Author: coohauterv
+* Tags: 
+*/
+
+/*
+ * Use this model to add new types of vehicles
+ */
+
+model Car
+
+import "Vehicle.gaml"
+
+species Car parent: Vehicle schedules: [] {
+	
+	action init {
+		has_width <- true;
+		traffic_influence <- 1.0;
+		subject_to_flow <- true;
+	}
+	
+	action init_vehicle(Person _owner, float _length<-4.0#meter, float _speed<-30#km/#h, int _seats<-4){
+		owner <- _owner;
+//		do add_passenger(owner);
+		location <- _owner.location;
+		length <- _length;
+		speed <- _speed;
+		seats <- _seats;
+		owner.vehicle <- self;
+	}
+	
+	action goto(point dest){
+		if !empty(passengers) {
+			//init
+			current_road <- nil;
+			owner.location <- location;
+			my_destination <- dest;
+			my_path <- path_between(car_road_graph, location, my_destination);
+			//compute theoretical arrival date for comparaison at the end of the simulated day
+			theoretical_arrival_date <- get_current_date() add_seconds compute_theoretical_time();
+			
+			if !empty(my_path.edges) {
+				do propose;
+			}else{
+				write get_current_date() + ": " + owner.name + " called goto on " + name + " but the path computed is null.";
+			}
+		}else{
+			write get_current_date() + ": " + name + " is asked to go somewhere without a driver !" color: #red;
+		}
+	}
+	
+	action propose {
+		//this method is similar to the propose done by roads. It should be used only at the init of the motion
+		Road r <- Road(my_path.edges[0]);
+		ask r {
+			do treat_proposition(myself);
+		}
+	}
+	
+	action enter_road(Road road){
+		current_road <- road;
+		location <- road.location;
+		loop p over: passengers {
+			p.location <- location;
+		} 
+//		owner.location <- self.location;
+		owner.color <- #yellow;
+		remove index: 0 from: my_path.edges;
+	}
+	
+	action move_to(point p){
+		
+	}
+	
+	action arrive_at_destination {
+		//delete from previous road
+		if current_road != nil {
+			ask current_road {
+				bool found <- remove(myself);	
+				assert found warning: true;
+			}	
+		}else{
+			write get_current_date() + ": Something is wrong with " + name + "\n Belonging to " + owner.name color:#orange;
+		}
+		current_road <- nil;
+		owner.location <- my_destination;
+		
+		//compute lateness for chart display
+		float _lateness <- (get_current_date() - theoretical_arrival_date);
+		assert _lateness >= 0;
+		if _lateness > 3 {
+			write owner.name + " is a bit late on its trip: " + _lateness color: #purple;
+			owner.lateness <- owner.lateness + _lateness;
+		}
+		
+		ask owner {
+			do end_motion; //this may kill the vehicle so make sure this is our last action
+		}
+	}
+	
+	float compute_theoretical_time {
+		float t;
+		loop r over: my_path.edges {
+			ask Road(r) {
+				t <- t + get_theoretical_travel_time(myself);
+			}
+		}
+		return t;
+	} 
+}
+
