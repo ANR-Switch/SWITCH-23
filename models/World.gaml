@@ -1,7 +1,7 @@
 /**
 * Name: World
 * Based on the internal empty template. 
-* Author: jferdelyi
+* Author: ohauterville
 * Tags: 
 */
 model World
@@ -19,7 +19,7 @@ import "Utilities/Population_builder.gaml"
 global {	
 	//loading parameters
 	string dataset_path <- "../includes/Castanet-Tolosan/CASTANET-TOLOSAN/";
-	shape_file shape_roads <- shape_file(dataset_path + "roads.shp");
+	shape_file shape_roads <- shape_file(dataset_path + "road.shp");
 //	shape_file shape_nodes <- shape_file(dataset_path + "nodes.shp");
 //	shape_file shape_boundary <- shape_file(dataset_path + "bounds.shp");
 	shape_file shape_buildings <- shape_file(dataset_path + "buildings.shp");
@@ -29,8 +29,8 @@ global {
 	date starting_date <- date([1970, 1, 1, 7, 14, 0]);
 	date sim_starting_date <- date([1970, 1, 1, 0, 0, 0]); //has to start at midnight! for activity.gaml init
 	
-//	float step <- 1 #seconds;
-	float step <- 1 #minutes;
+	float step <- 1 #seconds;
+//	float step <- 1 #minutes;
 //	float step <- 1 #hours;
 //	float step <- 1 #days;
 	int nb_event_managers <- 1;
@@ -44,6 +44,7 @@ global {
 	
 	init {
 		seed <- 42.0;
+		float sim_init_time <- machine_time;
 		date init_date <- (starting_date + (machine_time / 1000));
 
 		do init_event_managers; //good to do first
@@ -58,7 +59,7 @@ global {
 	 	//final init statement
 	 	do register_all_first_activities;
 		
-		write "Simulation is ready.";
+		write "Simulation is ready. In " + (machine_time - sim_init_time)/1000.0 + " seconds." ;
 	}
 	
 	action register_all_first_activities {
@@ -91,51 +92,69 @@ global {
 	action init_persons {
 		//create the persons
 		write "Persons...";
+		float t1 <- machine_time;
 		create Population_builder {
 			sim_starting_date <- myself.sim_starting_date;
 			working_buildings <- myself.working_buildings;
 			living_buildings <- myself.living_buildings;
 			do initialize_population;
 		}
+		write "There are " + length(Person) + " Persons loaded in " + (machine_time-t1)/1000.0 + " seconds.";
 	}
 	
 	action init_buildings {
 	 	write "Buildings...";
-		create Building from: shape_buildings with: [type::string(read("type"))]{
-			if type="residential" or type="apartments" or type="house" {
-				color <- #gray;
-				
+	 	float t1 <- machine_time;
+		create Building from: shape_buildings with: [type::int(read("type"))]{
+			if type=0 {
+
+				color <- #gray;				
 				add self to: myself.living_buildings;
-			}else{
-				color <- #blue;
-				
+			}else if type=1 or type=2{
+				color <- #blue;				
 				add self to: myself.working_buildings;
+			}else if type=4{
+				color <- #red;				
+				add self to: myself.working_buildings;
+			}else{
+				color <- #green;
+
 			}
 		}
-		write "Buildings loaded.";
+		write "There are " + length(Building) + " Buildings loaded in " + (machine_time-t1)/1000.0 + " seconds.";
 	 }
 	 
 	 action init_roads {
 	 	write "Roads...";
+	 	float t1 <- machine_time;
 	 	//car roads
-		create Road from: shape_roads with: [lanes::int(read("lanes")), 
-											max_speed::float(read("maxspeed")),
-											oneway::string(read("oneway"))
+		create Road from: shape_roads with: [lanes::int(read("nb_lane")), 
+											max_speed::float(read("max_speed")),
+											oneway::string(read("one_way")),
+											id::int(read("id")),
+											auth_vehicles::list<int>(read("vehicles"))
 		]{
 		}
-		//doublement
+		
+//		//doublement
+//		int nb_roads <- length(Road);
 //		loop r over: Road {
-//			if r.oneway != "no" {
+//			if r.oneway != "F" {
 //				create Road {
-//					shape <- reverse(list(r.shape));
+//					shape <- line(reverse(r.shape.points));
+//					id <- nb_roads + r.id;
 //					lanes <- r.lanes;
 //					max_speed <- r.max_speed;
 //					oneway <- r.oneway;
 //				}
 //			}
 //		}
+
+		//separation
+//		list<Road> car_roads <- Road collect each.car_auth;
+
 		car_road_weights_map <- Road as_map (each:: (each.shape.perimeter/each.max_speed));
-		write "Roads loaded.";
+		write "There are " + length(Road) + " Roads loaded in " + (machine_time-t1)/1000.0 + " seconds.";
 	 }
 	 
 	 action init_graphs {

@@ -37,14 +37,23 @@ species Car parent: Vehicle schedules: [] {
 			current_road <- nil;
 			owner.location <- location;
 			my_destination <- dest;
+//			float t1 <- machine_time;
 			my_path <- path_between(car_road_graph, location, my_destination);
-			//compute theoretical arrival date for comparaison at the end of the simulated day
-			theoretical_arrival_date <- get_current_date() add_seconds compute_theoretical_time();
-			
-			if !empty(my_path.edges) {
-				do propose;
+//			write "time : >>> " + (machine_time - t1) + " milliseconds" color: #green;
+			if my_path = nil {
+				write get_current_date() + ": " + name + " is not able to find a path between " + location + " and " + my_destination color: #red;
+				write "The motion will not be done. \n The activity: " + owner.current_activity.title + " of: " + owner.name + " might be done in the wrong location." color: #orange;
+				ask owner {
+					do end_motion;
+				}
 			}else{
-				write get_current_date() + ": " + owner.name + " called goto on " + name + " but the path computed is null.";
+				//compute theoretical arrival date for comparaison at the end of the simulated day
+				theoretical_arrival_date <- get_current_date() add_seconds compute_theoretical_time();
+				if !empty(my_path.edges) {
+					do propose;
+				}else{
+					write get_current_date() + ": " + owner.name + " called goto on " + name + " but the path computed is null.";
+				}	
 			}
 		}else{
 			write get_current_date() + ": " + name + " is asked to go somewhere without a driver !" color: #red;

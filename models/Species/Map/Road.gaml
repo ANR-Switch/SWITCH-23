@@ -10,9 +10,11 @@ model Road
 import "../Vehicles/Vehicle.gaml"
 
 species Road skills: [scheduling] schedules: [] {
+	int id;
 	int lanes <- 1; //From shapefile 
 	float max_speed <- 50.0 #km / #h; // From shapefile
 	string oneway <- "no"; //From shapefile
+	list<int> auth_vehicles;
 	point trans <- {2.0, 2.0};
 	geometry displayed_shape;
 	
@@ -51,10 +53,12 @@ species Road skills: [scheduling] schedules: [] {
 		displayed_shape <- (shape + lanes) translated_by (trans * 2);
 
 		//some security checks
-		if max_capacity < 9.0 {
-			max_capacity <- 9.0;
+		if max_capacity < 5.0 {
+			max_capacity <- 5.0;
 			write name + " defines the minimum max_capacity value." color:#orange;
 		}
+		
+//		do auth_vehicles_init;
 	
 	}
 	
@@ -152,7 +156,6 @@ species Road skills: [scheduling] schedules: [] {
 		//technically wa may have cases where we can accept a waiting car but that was not the first to register (like in a cross road section)
 		loop e over: waiting_list {
 			if (current_capacity + e.length <= max_capacity){
-				//TODO here  we create a temp mismatch between the current_capcity variable and the reality of the situation
 				do accept(e);
 				add e to: trash;
 			}
@@ -210,6 +213,7 @@ species Road skills: [scheduling] schedules: [] {
 	
 	action deadlock_prevention(Vehicle vehicle) {
 		//this method checks if a vehicle has been waiting a long time
+		//TODO IMPORTANT: not coorect, avec ça, le temps n'augmente pas correctement car on sera jamais au dessus de 1 en ratio capacity/max_capacity
 		if waiting_list contains vehicle {
 			write vehicle.name + " is forcing its way on " + name color:#orange;
 			float tmp_allocated_capacity <- vehicle.length + 0.01;
@@ -262,6 +266,21 @@ species Road skills: [scheduling] schedules: [] {
 		float speed <- min(max_speed, v.speed);
 		return (shape.perimeter / speed);
 	}
+	
+//	action auth_vehicles_init {
+//		if auth_vehicles contains 0 {
+//			car_track <- true;
+//		}
+//		if auth_vehicles contains 1 {
+//			bike_track <- true;
+//		}
+//		if auth_vehicles contains 2 {
+//			pedestrian_track <- true;
+//		}
+//		if auth_vehicles contains 3 {
+//			car_track <- true;
+//		}
+//	}
 
 	aspect default {
 		draw displayed_shape color: rgb(255 * (current_capacity / max_capacity), 0, 0);

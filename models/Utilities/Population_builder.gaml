@@ -80,9 +80,11 @@ species Population_builder schedules: [] {
 				
 			////	
 			
+			loop i from: 0 to: 0 {
 			create Person from: (self.select(params: myself.param,	//create all the individu
 				select: "SELECT * FROM individu"))
 				with:[first_name::"nom",age::"age",genre::"genre",professional_activity::"activite_pro",income::"revenu",study_level::"etudes"];
+			}
 			/*
 			create Person from: (self.select(params: myself.param,	//create all the individu
 				select: "SELECT * FROM individu"))

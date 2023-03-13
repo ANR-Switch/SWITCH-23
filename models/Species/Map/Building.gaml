@@ -8,8 +8,8 @@
 
 model Building
 
-species Building {
-	string type;
+species Building schedules: [] {
+	int type;
 	rgb color;
 
 	aspect default {

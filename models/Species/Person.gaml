@@ -188,7 +188,7 @@ species Person skills: [scheduling] schedules: [] {
     }
     
     aspect default {
-    	draw circle(2) color: color border: #black;
+    	draw circle(4) color: color border: #black;
     }
 	
 	
