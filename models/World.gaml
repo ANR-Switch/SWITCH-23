@@ -6,6 +6,8 @@
 */
 model World
 
+import "Utilities/Constants.gaml"
+
 import "Utilities/EventManager.gaml"
 
 import "Utilities/Logger.gaml"
@@ -18,7 +20,8 @@ import "Utilities/Population_builder.gaml"
 
 global {	
 	//loading parameters
-	string dataset_path <- "../includes/Castanet-Tolosan/CASTANET-TOLOSAN/";
+//	string dataset_path <- "../includes/Castanet-Tolosan/CASTANET-TOLOSAN/";
+	string dataset_path <- "../includes/Castanet-Tolosan/TEST/";
 	shape_file shape_roads <- shape_file(dataset_path + "road.shp");
 //	shape_file shape_nodes <- shape_file(dataset_path + "nodes.shp");
 //	shape_file shape_boundary <- shape_file(dataset_path + "bounds.shp");
@@ -26,11 +29,11 @@ global {
 	geometry shape <- envelope(shape_roads);
 	
 	//general paramters	 
-	date starting_date <- date([1970, 1, 1, 7, 14, 0]);
+	date starting_date <- date([1970, 1, 1, 6, 0, 0]);
 	date sim_starting_date <- date([1970, 1, 1, 0, 0, 0]); //has to start at midnight! for activity.gaml init
 	
-	float step <- 1 #seconds;
-//	float step <- 1 #minutes;
+//	float step <- 1 #seconds;
+	float step <- 1 #minutes;
 //	float step <- 1 #hours;
 //	float step <- 1 #days;
 	int nb_event_managers <- 1;
@@ -47,6 +50,7 @@ global {
 		float sim_init_time <- machine_time;
 		date init_date <- (starting_date + (machine_time / 1000));
 
+		create Constants; //constant file useful for other species
 		do init_event_managers; //good to do first
 		do init_buildings;
 	 	do init_roads;
@@ -106,19 +110,26 @@ global {
 	 	write "Buildings...";
 	 	float t1 <- machine_time;
 		create Building from: shape_buildings with: [type::int(read("type"))]{
-			if type=0 {
-
-				color <- #gray;				
-				add self to: myself.living_buildings;
-			}else if type=1 or type=2{
-				color <- #blue;				
-				add self to: myself.working_buildings;
-			}else if type=4{
-				color <- #red;				
-				add self to: myself.working_buildings;
-			}else{
-				color <- #green;
-
+			switch int(type) {
+				match 0 {
+					color <- #gray;				
+					add self to: myself.living_buildings;
+				}
+				match 1 {
+					color <- #blue;				
+					add self to: myself.working_buildings;
+				}
+				match 2 {
+					color <- #blue;				
+					add self to: myself.working_buildings;
+				}
+				match 4 {
+					color <- #red;				
+					add self to: myself.working_buildings;
+				}
+				default {
+					color <- #green;
+				}	
 			}
 		}
 		write "There are " + length(Building) + " Buildings loaded in " + (machine_time-t1)/1000.0 + " seconds.";
@@ -132,7 +143,7 @@ global {
 											max_speed::float(read("max_speed")),
 											oneway::string(read("one_way")),
 											id::int(read("id")),
-											auth_vehicles::list<int>(read("vehicles"))
+											allowed_vehicles::list<list<int>>(read("vehicles"))
 		]{
 		}
 		
@@ -180,12 +191,12 @@ experiment "test CT" type: gui {
 		
 		display "chart_display" {
 	        chart "lateness_chart" type: histogram {
-	        	datalist  (distribution_of(Person collect each.lateness,15,0,150) at "legend") 
-	            value:(distribution_of(Person collect each.lateness,15,0,150) at "values");      
+	        	datalist  (distribution_of(Person collect (each.total_lateness/length(each.personal_agenda.activities)),6,0, Person max_of(each.total_lateness/length(each.personal_agenda.activities))) at "legend") 
+	            value:(distribution_of(Person collect (each.total_lateness/length(each.personal_agenda.activities)),6,0,Person max_of(each.total_lateness/length(each.personal_agenda.activities))) at "values");      
 	        } 
         }
 		
-		monitor "Time: " value: current_date;
+//		monitor "Time: " value: current_date;
 
 	}
 

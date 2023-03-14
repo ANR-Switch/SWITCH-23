@@ -85,30 +85,7 @@ species Population_builder schedules: [] {
 				select: "SELECT * FROM individu"))
 				with:[first_name::"nom",age::"age",genre::"genre",professional_activity::"activite_pro",income::"revenu",study_level::"etudes"];
 			}
-			/*
-			create Person from: (self.select(params: myself.param,	//create all the individu
-				select: "SELECT * FROM individu"))
-				with:[first_name::"nom",age::"age",genre::"genre",professional_activity::"activite_pro",income::"revenu",study_level::"etudes"];
-			create Person from: (self.select(params: myself.param,	//create all the individu
-				select: "SELECT * FROM individu"))
-				with:[first_name::"nom",age::"age",genre::"genre",professional_activity::"activite_pro",income::"revenu",study_level::"etudes"];
-			create Person from: (self.select(params: myself.param,	//create all the individu
-				select: "SELECT * FROM individu"))
-				with:[first_name::"nom",age::"age",genre::"genre",professional_activity::"activite_pro",income::"revenu",study_level::"etudes"];
-			create Person from: (self.select(params: myself.param,	//create all the individu
-				select: "SELECT * FROM individu"))
-				with:[first_name::"nom",age::"age",genre::"genre",professional_activity::"activite_pro",income::"revenu",study_level::"etudes"];
-			create Person from: (self.select(params: myself.param,	//create all the individu
-				select: "SELECT * FROM individu"))
-				with:[first_name::"nom",age::"age",genre::"genre",professional_activity::"activite_pro",income::"revenu",study_level::"etudes"];
-			create Person from: (self.select(params: myself.param,	//create all the individu
-				select: "SELECT * FROM individu"))
-				with:[first_name::"nom",age::"age",genre::"genre",professional_activity::"activite_pro",income::"revenu",study_level::"etudes"];
-			create Person from: (self.select(params: myself.param,	//create all the individu
-				select: "SELECT * FROM individu"))
-				with:[first_name::"nom",age::"age",genre::"genre",professional_activity::"activite_pro",income::"revenu",study_level::"etudes"];
-			*/
-			////
+			
 			
 			create Agenda from: (self.select(params: myself.param,		//create all the agent
 				select: "SELECT * FROM agenda"))
@@ -172,9 +149,9 @@ species Population_builder schedules: [] {
 					do choose_location(myself.living_buildings, myself.working_buildings);						
 				}
 			}
-			ask ppl {
-				do salt_agenda;
-			}
+//			ask ppl {
+//				do salt_agenda;
+//			}
 		}
 	}
 	

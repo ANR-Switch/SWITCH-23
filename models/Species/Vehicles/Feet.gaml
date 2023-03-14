@@ -9,19 +9,19 @@
  * Use this model to add new types of vehicles
  */
 
-model Car
+model Feet
 
 import "Vehicle.gaml"
 
-species Car parent: Vehicle schedules: [] {
+species Feet parent: Vehicle schedules: [] {
 	
 	action init {
-//		has_width <- true;
-		traffic_influence <- 1.0;
+//		has_width <- false;
+		traffic_influence <- 0.0;
 		subject_to_flow <- true;
 	}
 	
-	action init_vehicle(Person _owner, float _length<-4.0#meter, float _speed<-130#km/#h, int _seats<-4){
+	action init_vehicle(Person _owner, float _length<-0.0#meter, float _speed<-5#km/#h, int _seats<-1){
 		owner <- _owner;
 //		do add_passenger(owner);
 		location <- _owner.location;
@@ -77,7 +77,7 @@ species Car parent: Vehicle schedules: [] {
 			p.location <- location;
 		} 
 //		owner.location <- self.location;
-		owner.color <- #yellow;
+		owner.color <- #darkgreen;
 		remove index: 0 from: my_path.edges;
 	}
 	

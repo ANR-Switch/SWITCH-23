@@ -8,6 +8,12 @@
 
 model Person
 
+import "../Utilities/Constants.gaml"
+
+import "Vehicles/Feet.gaml"
+
+import "Vehicles/Bike.gaml"
+
 import "Vehicles/Car.gaml"
 
 import "../Utilities/EventManager.gaml"
@@ -29,86 +35,63 @@ species Person skills: [scheduling] schedules: [] {
 	Activity current_activity;
 	
 	//
+//	Constants constants;
+	int randomiser <- 10;
 	float lateness <- 0.0;
+	float total_lateness <- 0.0;
+	float lateness_tolerance <- 180.0 const: true; //seconds
+	float theoretical_travel_duration;
 	rgb color <- #grey;
 	Vehicle vehicle;
 	
 	init {
-		
+		do choose_vehicle();
 	}
 	
 	action select_living_building(list<Building> living_buildings){
 		living_building <- one_of(living_buildings);
 		location <- any_location_in(living_building);
 	}
-	
-	action salt_agenda{
-        loop acti over: personal_agenda.activities{
-            acti.starting_date <- acti.starting_date add_minutes rnd(-15,15) ;
-//            write acti.starting_date;
-            acti.duration <- acti.duration + rnd(-5,5);
-            if (acti.duration < 0) {
-            	acti.duration <- 1;
-            }
-        }
-    }
     
 	action select_agenda{
-        list<Agenda> available_agendas <- [];
-        loop p over: self.profile{
-            loop a over: Agenda{
+        //write "select_agenda";
+        int i <- 0;
+        map<int,Agenda> available_agendas <- [];
+        loop p over:self.profile{
+            loop a over:Agenda{
                 if a.profile one_matches(each = p){
-                    add a to: available_agendas;             
+                    add a to: available_agendas;
+                    i <- i+1;
                 }
             }
         }
-        Agenda template <- one_of(available_agendas);
-//        assert length(a) = 1;
-// may be a better way to duplicate agents
-        create Agenda returns: my_agenda {
-        	name <- template.name;
-        	id <- template.id;
-        	owner <- myself; //TODO may be removed ?
-        	loop act over: template.activities {
-        		create Activity returns: _a {
-        			id <- act.id;
-					title <- act.title;
-					priority_level <- act.priority_level;
-					type <- act.type;
-					starting_minute <- act.starting_minute;
-					starting_date <- act.starting_date;
-					duration <- act.duration;
-					activity_location <- act.activity_location;
-        		}
-        		add _a[0] to: activities;
-        	}
-        } 
-        personal_agenda <- my_agenda[0];
+        personal_agenda <- one_of(available_agendas);
     }
     
     action register_first_activity {
     	if !empty(personal_agenda.activities) {
     		current_activity <- personal_agenda.activities[0];
-    	  	do later the_action: "start_activity" at: current_activity.starting_date;
-    	  	create Car returns: c;
-    	  	ask c {
-    	  		do init_vehicle(myself);
-    	  	}
+    		date d <- current_activity.starting_date add_minutes rnd(-floor(Constants[0].starting_time_randomiser/2), floor(Constants[0].starting_time_randomiser/2));
+    	  	do later the_action: "start_activity" at: d ;
+//    	  	create Car returns: c;
+//    	  	ask c {
+//    	  		do init_vehicle(myself);
+//    	  	}
     	}else{
     		write get_current_date() + ": " + name + " will do nothing today.";
     	}
     }
     
-    action start_activity {
-    	write get_current_date() + ": " +  name + " starts " + current_activity.title ;
-    	
+    
+    
+    action start_activity {    	
     	assert vehicle != nil warning: true;
     	assert current_activity.activity_location != nil warning: true;
     	
 		if location != current_activity.activity_location {
 			do start_motion(current_activity.activity_location);
 		}else{
-			color <- #green;
+			color <- #blue;
 			write name + " is already at its destination. It will do its activity directly.";
 			date _end <- get_current_date() add_minutes current_activity.duration;
 			do later the_action: "end_activity" at: _end;
@@ -127,7 +110,8 @@ species Person skills: [scheduling] schedules: [] {
     		if current_activity.starting_date > get_current_date() {
     			do later the_action: "start_activity" at: current_activity.starting_date;
     		}else{
-    			write get_current_date() + ": " + name + " starts " + current_activity.title + " late on its agenda." color:#orange; 
+//    			write get_current_date() + ": " + name + " starts " + current_activity.title + " late on its agenda." color:#orange; 
+				//this may either be due to a past traffic jam situation or a the randomisation if the starting dates
     			do later the_action: "start_activity" at: get_current_date() add_seconds 1;
     		}
     	}else{
@@ -151,44 +135,57 @@ species Person skills: [scheduling] schedules: [] {
     	ask vehicle{
     		do remove_passenger(myself);
     	}
-    	color <- #green;
+    	write get_current_date() + ": " + name + " starts doing: " + current_activity.title;
+    	color <- #blue;
+    	total_lateness <- total_lateness + lateness;
+    	
     	if act_idx < length(personal_agenda.activities) - 1 {
-    		date t_next <- personal_agenda.activities[act_idx + 1].starting_date ;
-    		date t_end <- get_current_date() add_minutes current_activity.duration ; 
-    		
-    		if t_end <= t_next {
-    			write get_current_date() + ": " + name + " starts doing: " + current_activity.title + " for " + current_activity.duration + " minutes.";
-    			do later the_action: "end_activity" at: t_end;
-    		}else{
-    			float overlap <- t_end - t_next;
-    			write get_current_date() + ": " + name + " is late." color: #orange;
-    			if current_activity.priority_level <= personal_agenda.activities[act_idx + 1].priority_level {
-    				//the most important level is 0, decreasing order.
-    				//do the current one and the next ones will be late    				
-    				write "The end of " + current_activity.title + " overlaps the next activity: " + personal_agenda.activities[act_idx + 1].title + " by " + overlap + " seconds" color:#orange;
-    				write "But " + name+ " will complete its current activity and start the next one late." color:#orange; 
-    				do later the_action: "end_activity" at: t_end;
-    			}else{    				
-    				if get_current_date() < personal_agenda.activities[act_idx + 1].starting_date add_seconds -1 {
-    					float span_time <- personal_agenda.activities[act_idx + 1].starting_date - get_current_date() - 1;
-    					write name + " will do: " + current_activity.title + " for " + span_time+ " seconds instead of the " + current_activity.duration + " seconds planned in order to start: " + personal_agenda.activities[act_idx + 1].title + " on time." color: #red;
-    					do later the_action: "end_activity" at: personal_agenda.activities[act_idx + 1].starting_date add_seconds -1;	
-    				}else{
-    					write name + " will not do " + current_activity.title + " because it is too late and the next activity is more important." color: #red;
-    					do later the_action: "end_activity" at: get_current_date() add_seconds 1;
-    				}
+    		if lateness > lateness_tolerance {
+    			write get_current_date() + name + " took " + lateness + " seconds more than planned to do its trip." color: #purple;    			
+    			
+    			if current_activity.priority_level <= personal_agenda.activities[act_idx+1].priority_level {
+    				//we prefer to do the current activity (priority lvl in reverse order)
+    				//here act_duration is the duration minus the theoretical travel time
+    				
+    				do later the_action: "end_activity" at: get_current_date() add_minutes (current_activity.duration + rnd(0,Constants[0].starting_time_randomiser));
+    				write get_current_date() + ": " + name + " will do " + current_activity.title + " completely." color: #purple;
+    			}else{
+    				write get_current_date() +": " + name + " will reduce the time spent on " + current_activity.title + "." color: #purple;
+    				date d <- personal_agenda.activities[act_idx+1].starting_date add_minutes rnd(0, Constants[0].starting_time_randomiser);
+	    			if d <= get_current_date() {
+	    				d <- get_current_date() add_seconds 1;
+	    			}
+	    			do later the_action: "end_activity" at: d;
     			}
+    		}else{
+    			date d <- personal_agenda.activities[act_idx+1].starting_date add_minutes rnd(0, Constants[0].starting_time_randomiser);
+    			if d <= get_current_date() {
+    				d <- get_current_date() add_seconds 1;
+    			}
+    			do later the_action: "end_activity" at: d;
     		}
     	}else{
     		//case: it was our last activity
-    		write get_current_date() + ": " + name + " starts doing: " + current_activity.title + " for " + current_activity.duration + " minutes. It is its last activity.";
     		do later the_action: "end_activity" at: get_current_date() add_minutes current_activity.duration;
+    	}    	
+    }
+    
+    action choose_vehicle {
+    	if flip(Constants[0].cyclists_ratio){
+    		create Bike returns: b;
+    	  	ask b {
+    	  		do init_vehicle(myself);
+    	  	}
+    	}else{
+    		create Car returns: c;
+    	  	ask c {
+    	  		do init_vehicle(myself);
+    	  	}
     	}
-    	
     }
     
     aspect default {
-    	draw circle(4) color: color border: #black;
+    	draw circle(5) color: color border: #black;
     }
 	
 	

@@ -28,7 +28,7 @@ species Vehicle virtual: true schedules: [] {
 	date theoretical_arrival_date;
 	
 	//for traffic conditions used by the road agents (default values are for a car)
-	bool has_width <- true; //overtakable ? meaning it has to wait to be first in queue to go out 
+//	bool has_width <- true; //overtakable ? meaning it has to wait to be first in queue to go out 
 	float traffic_influence <- 1.0; //strength of our influence on the traffic, should be 1 for cars bus and trucks, and less for bikes
 	bool subject_to_flow <- true;
 	
