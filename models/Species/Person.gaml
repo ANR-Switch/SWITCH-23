@@ -31,26 +31,38 @@ species Person skills: [scheduling] schedules: [] {
 	list<int> profile;
 	Agenda personal_agenda;
 	Building living_building;
+	Building working_building;
+	Building commercial_building;
+	Building studying_building;
+	Building leasure_building;
 	int act_idx <- 0; 
 	Activity current_activity;
 	
 	//
-//	Constants constants;
-	int randomiser <- 10;
+	point current_dest; 
+	date start_motion_date;
+	float total_travel_time <- 0.0;
 	float lateness <- 0.0;
 	float total_lateness <- 0.0;
-	float lateness_tolerance <- 180.0 const: true; //seconds
+	float lateness_tolerance <- Constants[0].lateness_tolerance const: true; //seconds
 	float theoretical_travel_duration;
-	rgb color <- #grey;
+	rgb color <- #black;
 	Vehicle vehicle;
+	
+	//output display
+	bool is_moving_chart <- false; //used for display
 	
 	init {
 		do choose_vehicle();
 	}
 	
-	action select_living_building(list<Building> living_buildings){
-		living_building <- one_of(living_buildings);
-		location <- any_location_in(living_building);
+//	action select_living_building(list<Building> living_buildings){
+//		living_building <- one_of(living_buildings);
+//		location <- any_location_in(living_building);
+//	}
+	
+	Building select_building (list<Building> l){
+		return one_of(l);
 	}
     
 	action select_agenda{
@@ -86,10 +98,36 @@ species Person skills: [scheduling] schedules: [] {
     
     action start_activity {    	
     	assert vehicle != nil warning: true;
-    	assert current_activity.activity_location != nil warning: true;
+//    	assert current_activity.activity_location != nil warning: true;
+		switch int(current_activity.type){
+			match 0 {
+				current_dest <- any_location_in(living_building);
+			}
+			match 1 {
+				current_dest <- any_location_in(working_building);
+			}
+			match 2 {
+				current_dest <- any_location_in(studying_building);
+			}
+			match 3 {
+				current_dest <- any_location_in(commercial_building);
+			}
+			match 4 {
+//				dest <- any_location_in(living_building); TODO
+			}
+			match 5 {
+				current_dest <- any_location_in(leasure_building);
+			}
+			match 6 {
+				current_dest <- any_location_in(studying_building);
+			}
+			default {
+				write "Weird activity !" color: #red;
+			}
+		}
     	
-		if location != current_activity.activity_location {
-			do start_motion(current_activity.activity_location);
+		if location != current_dest {
+			do start_motion(current_dest);
 		}else{
 			color <- #blue;
 			write name + " is already at its destination. It will do its activity directly.";
@@ -100,7 +138,7 @@ species Person skills: [scheduling] schedules: [] {
     
     action end_activity {
     	write get_current_date() + ": " + name + " ends " + current_activity.title;
-    	color <- #grey;
+    	color <- #black;
     	
     	if act_idx < length(personal_agenda.activities) - 1 {
     		act_idx <- act_idx + 1;
@@ -124,7 +162,9 @@ species Person skills: [scheduling] schedules: [] {
     
     action start_motion(point p){
     	write get_current_date() + ": " + name + " takes vehicle: " + vehicle.name + " to do: " + current_activity.title;
-    	color <- #yellow;
+//    	color <- vehicle.color;
+    	start_motion_date <- get_current_date();
+    	is_moving_chart <- true;
     	ask vehicle{
     		do add_passenger(myself);
 			do goto(p);
@@ -132,15 +172,18 @@ species Person skills: [scheduling] schedules: [] {
     }
     
     action end_motion {
+    	location <- current_dest;
     	ask vehicle{
     		do remove_passenger(myself);
     	}
     	write get_current_date() + ": " + name + " starts doing: " + current_activity.title;
     	color <- #blue;
-    	total_lateness <- total_lateness + lateness;
+    	is_moving_chart <- false;
+    	total_travel_time <- total_travel_time + (get_current_date() - start_motion_date);
     	
     	if act_idx < length(personal_agenda.activities) - 1 {
     		if lateness > lateness_tolerance {
+    			total_lateness <- total_lateness + lateness;
     			write get_current_date() + name + " took " + lateness + " seconds more than planned to do its trip." color: #purple;    			
     			
     			if current_activity.priority_level <= personal_agenda.activities[act_idx+1].priority_level {
@@ -171,21 +214,46 @@ species Person skills: [scheduling] schedules: [] {
     }
     
     action choose_vehicle {
-    	if flip(Constants[0].cyclists_ratio){
-    		create Bike returns: b;
-    	  	ask b {
-    	  		do init_vehicle(myself);
-    	  	}
-    	}else{
-    		create Car returns: c;
-    	  	ask c {
-    	  		do init_vehicle(myself);
-    	  	}
+    	int choice <- rnd_choice([feet_weight, bike_weight, car_weight]);
+    	switch int(choice) {
+    		match 0 {
+    			create Feet returns: f;
+	    	  	ask f {
+	    	  		do init_vehicle(myself);
+	    	  	}
+    		}
+    		match 1 {
+    			create Bike returns: b;
+	    	  	ask b {
+	    	  		do init_vehicle(myself);
+	    	  	}
+    		}
+    		match 2 {
+    			create Car returns: c;
+	    	  	ask c {
+	    	  		do init_vehicle(myself);
+	    	  	}
+    		}
     	}
+//    	if flip(Constants[0].cyclists_ratio){
+//    		create Bike returns: b;
+//    	  	ask b {
+//    	  		do init_vehicle(myself);
+//    	  	}
+//    	}else{
+//    		create Car returns: c;
+//    	  	ask c {
+//    	  		do init_vehicle(myself);
+//    	  	}
+//    	}
+    }
+    
+    action set_color(rgb c) {
+    	color <- c;
     }
     
     aspect default {
-    	draw circle(5) color: color border: #black;
+    	draw circle(8) color: color border: #black;
     }
 	
 	

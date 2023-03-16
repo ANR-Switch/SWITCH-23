@@ -14,11 +14,9 @@ model Feet
 import "Vehicle.gaml"
 
 species Feet parent: Vehicle schedules: [] {
-	
-	action init {
-//		has_width <- false;
-		traffic_influence <- 0.0;
-		subject_to_flow <- true;
+
+	init {
+		color <- #darkgoldenrod;
 	}
 	
 	action init_vehicle(Person _owner, float _length<-0.0#meter, float _speed<-5#km/#h, int _seats<-1){
@@ -38,7 +36,7 @@ species Feet parent: Vehicle schedules: [] {
 			owner.location <- location;
 			my_destination <- dest;
 //			float t1 <- machine_time;
-			my_path <- path_between(car_road_graph, location, my_destination);
+			my_path <- path_between(feet_road_graph, location, my_destination);
 //			write "time : >>> " + (machine_time - t1) + " milliseconds" color: #green;
 			if my_path = nil {
 				write get_current_date() + ": " + name + " is not able to find a path between " + location + " and " + my_destination color: #red;
@@ -75,9 +73,8 @@ species Feet parent: Vehicle schedules: [] {
 		location <- road.location;
 		loop p over: passengers {
 			p.location <- location;
+			p.color <- color;
 		} 
-//		owner.location <- self.location;
-		owner.color <- #darkgreen;
 		remove index: 0 from: my_path.edges;
 	}
 	

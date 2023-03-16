@@ -14,9 +14,15 @@ species Road skills: [scheduling] schedules: [] {
 	int lanes <- 1; //From shapefile 
 	float max_speed <- 50.0 #km / #h; // From shapefile
 	string oneway <- "no"; //From shapefile
-	list<list<int>> allowed_vehicles;
+	unknown allowed_vehicles;
 	point trans <- {2.0, 2.0};
 	geometry displayed_shape;
+	
+	//identifiers
+	bool car_track <- false;
+	bool bike_track <- false;
+	bool pedestrian_track <- false;
+	bool public_transport_track <- false;	
 	
 	//traffic attributes
 	float current_capacity <- 0.0;
@@ -34,6 +40,9 @@ species Road skills: [scheduling] schedules: [] {
 	
 	//test
 	float max_tmp_alocated_test;	
+	
+	//output display
+	bool is_jammed <- false;
 
 	init {
 		point A <- first(shape.points);
@@ -58,7 +67,7 @@ species Road skills: [scheduling] schedules: [] {
 			write name + " defines the minimum max_capacity value." color:#orange;
 		}
 		
-//		do auth_vehicles_init;
+		do allowed_vehicles_init();
 	
 	}
 	
@@ -69,40 +78,7 @@ species Road skills: [scheduling] schedules: [] {
 		if(t_min < 1.0){
 			t_min <- 1.0;
 		}
-		
-//		assert current_capacity + vehicle.length <= max_capacity warning: true;
-		//////////////////////////////
-//		if vehicle.has_width {
-//			if empty(_queue){
-//				//case: the vehicle can only go out if it's the first in queue
-//				leave_date <- get_current_date() add_seconds t_min;
-//				do add(vehicle, leave_date);
-//				do later the_action: "propose" with_arguments: map("vehicle"::vehicle) at: leave_date;
-//			}else{
-//				//case: is there a non overtakable vehicle in front of us ?
-//				bool _bool <- is_there_width_vehicle();
-//
-//				if _bool {
-//					float capacity_ratio <- compute_capacity_ratio_for_traffic();
-//					float t <- t_min * ( 1 + alpha * capacity_ratio ^ beta );
-//					leave_date <- get_current_date() add_seconds t;
-//					//case: we do not schedule a leaving time yet
-////					write get_current_date() + ": entered but its not first in queue on " + name;
-//					do add(vehicle, leave_date);
-//				}else{
-//					//case: there are some vehicle in front of us but we can overtake them (they are pedestrians or cyclists)
-//					leave_date <- get_current_date() add_seconds t_min;
-//					do add(vehicle, leave_date);
-//					do later the_action: "propose" with_arguments: map("vehicle"::vehicle) at: leave_date;
-//				}
-//			}
-//		}else{
-//			//case: we can overtake or be overtaken so no traffic influence required
-//			leave_date <- get_current_date() add_seconds t_min;
-//			do add(vehicle, leave_date);
-//			do later the_action: "propose" with_arguments: map("vehicle"::vehicle) at: leave_date;
-//		}	
-		////////////////////////
+
 		switch species(vehicle){
 			match Bike {
 				leave_date <- get_current_date() add_seconds t_min;
@@ -233,7 +209,6 @@ species Road skills: [scheduling] schedules: [] {
 	action add(Vehicle vehicle, date leave_date){
 		bool already_there <- check_presence(vehicle);
 		if !(already_there){
-//			do later the_action: "propose" with_arguments: map("vehicle"::vehicle) at: leave_date;
 			//remove vehicle from its current road and add it to this road
 			if vehicle.current_road != nil { //this happens if the vehicle is at its first road
 				ask vehicle.current_road {
@@ -256,6 +231,7 @@ species Road skills: [scheduling] schedules: [] {
 		//this method checks if a vehicle has been waiting a long time
 		//TODO IMPORTANT: not coorect, avec ça, le temps n'augmente pas correctement car on sera jamais au dessus de 1 en ratio capacity/max_capacity
 		if waiting_list contains vehicle {
+			is_jammed <- true;
 			write get_current_date() + ": " + vehicle.name + " is forcing its way on " + name color:#orange;
 			float tmp_allocated_capacity <- vehicle.length + 0.01;
 			max_capacity <- max_capacity + tmp_allocated_capacity;
@@ -269,6 +245,7 @@ species Road skills: [scheduling] schedules: [] {
 		//its better to always have the current_capacity below the max
 		if current_capacity < max_capacity - tmp_allocated_capacity {
 			max_capacity <- max_capacity - tmp_allocated_capacity;	
+			is_jammed <- false;
 			max_tmp_alocated_test <- max_tmp_alocated_test + tmp_allocated_capacity; //TODO remove after test
 		}else{
 			do later the_action: "remove_deadlock_capacity" with_arguments: map("tmp_allocated_capacity"::tmp_allocated_capacity) at: get_current_date() add_minutes 3;
@@ -306,20 +283,29 @@ species Road skills: [scheduling] schedules: [] {
 		return (shape.perimeter / speed);
 	}
 	
-//	action auth_vehicles_init {
-//		if auth_vehicles contains 0 {
-//			car_track <- true;
+	action allowed_vehicles_init {
+//		list<list<int>> l <- to_list(allowed_vehicles);
+//		loop e over: to_list(allowed_vehicles) {
+//			write e;
 //		}
-//		if auth_vehicles contains 1 {
-//			bike_track <- true;
+//		loop e over: l {
+////		write "deux " + e;
+//		
 //		}
-//		if auth_vehicles contains 2 {
-//			pedestrian_track <- true;
-//		}
-//		if auth_vehicles contains 3 {
-//			car_track <- true;
-//		}
-//	}
+//		write " " + l;
+		if allowed_vehicles contains "0" {
+			car_track <- true;
+		}
+		if allowed_vehicles contains "1" {
+			bike_track <- true;
+		}
+		if allowed_vehicles contains "2" {
+			pedestrian_track <- true;
+		}
+		if allowed_vehicles contains "3" {
+			public_transport_track <- true;
+		}
+	}
 
 	aspect default {
 		draw displayed_shape color: rgb(255 * (current_capacity / max_capacity), 0, 0);

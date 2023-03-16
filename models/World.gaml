@@ -19,9 +19,12 @@ import "Species/Map/Building.gaml"
 import "Utilities/Population_builder.gaml"
 
 global {	
+	float step <- 600 #seconds parameter: "Step"; //86400 for a day
+	float simulated_days <- 1 #days parameter: "Simulated_days";
+	
 	//loading parameters
-//	string dataset_path <- "../includes/Castanet-Tolosan/CASTANET-TOLOSAN/";
-	string dataset_path <- "../includes/Castanet-Tolosan/TEST/";
+	string dataset_path <- "../includes/Castanet-Tolosan/CASTANET-TOLOSAN/";
+//	string dataset_path <- "../includes/Castanet-Tolosan/TEST/";
 	shape_file shape_roads <- shape_file(dataset_path + "road.shp");
 //	shape_file shape_nodes <- shape_file(dataset_path + "nodes.shp");
 //	shape_file shape_boundary <- shape_file(dataset_path + "bounds.shp");
@@ -31,26 +34,36 @@ global {
 	//general paramters	 
 	date starting_date <- date([1970, 1, 1, 6, 0, 0]);
 	date sim_starting_date <- date([1970, 1, 1, 0, 0, 0]); //has to start at midnight! for activity.gaml init
-	
-//	float step <- 1 #seconds;
-	float step <- 1 #minutes;
-//	float step <- 1 #hours;
-//	float step <- 1 #days;
+
+	float bike_weight <- 0.1 parameter: "Bike";
+	float feet_weight <- 0.1 parameter: "Feet";
+	float car_weight <- 0.8 parameter: "Car";
+
 	int nb_event_managers <- 1;
 	
 	graph car_road_graph;
-	map<Road, float> car_road_weights_map;
+//	map<Road, float> car_road_weights_map;
+	graph feet_road_graph;
+//	map<Road, float> feet_road_weights_map;
+	graph bike_road_graph;
+//	map<Road, float> bike_road_weights_map;
 	//graph others;
 	 
 	list<Building> working_buildings;
 	list<Building> living_buildings;
+	list<Building> leasure_buildings;
+	list<Building> studying_buildings;
+	list<Building> commercial_buildings;
 	
 	init {
 		seed <- 42.0;
 		float sim_init_time <- machine_time;
 		date init_date <- (starting_date + (machine_time / 1000));
 
+		do normalize_modality();
 		create Constants; //constant file useful for other species
+		
+		//init
 		do init_event_managers; //good to do first
 		do init_buildings;
 	 	do init_roads;
@@ -120,15 +133,19 @@ global {
 					add self to: myself.working_buildings;
 				}
 				match 2 {
-					color <- #blue;				
-					add self to: myself.working_buildings;
+					color <- #cyan;				
+					add self to: myself.studying_buildings;
 				}
-				match 4 {
+				match 3 {
 					color <- #red;				
-					add self to: myself.working_buildings;
+					add self to: myself.commercial_buildings;
+				}
+				match 5 {
+					color <- #green;				
+					add self to: myself.leasure_buildings;
 				}
 				default {
-					color <- #green;
+					color <- #yellow;
 				}	
 			}
 		}
@@ -143,7 +160,7 @@ global {
 											max_speed::float(read("max_speed")),
 											oneway::string(read("one_way")),
 											id::int(read("id")),
-											allowed_vehicles::list<list<int>>(read("vehicles"))
+											allowed_vehicles::unknown(read("vehicles"))
 		]{
 		}
 		
@@ -164,21 +181,60 @@ global {
 		//separation
 //		list<Road> car_roads <- Road collect each.car_auth;
 
-		car_road_weights_map <- Road as_map (each:: (each.shape.perimeter/each.max_speed));
 		write "There are " + length(Road) + " Roads loaded in " + (machine_time-t1)/1000.0 + " seconds.";
 	 }
 	 
 	 action init_graphs {
 	 	write "Graphs...";
-	 	car_road_graph <- as_edge_graph(Road) with_weights car_road_weights_map;
+	 	float t1 <- machine_time;
+	 	//TODO
+	 	list<Road> road_subset;
+	 	map<Road, float> road_weights_map;
+	 	
+	 	//feet 
+	 	road_subset <- Road where (each.max_speed < 80);
+	 	road_weights_map <- road_subset as_map (each:: (each.shape.perimeter));
+	 	feet_road_graph <- as_edge_graph(road_subset) with_weights road_weights_map;
+	 	write "Pedestrians can use " + length(road_subset) + " road segments.";
+	 	
+	 	//bike
+	 	road_subset <- Road where (each.max_speed < 80);
+	 	road_weights_map <- road_subset as_map (each:: (each.shape.perimeter));
+	 	bike_road_graph <- as_edge_graph(road_subset) with_weights road_weights_map;
+	 	write "Cyclists can use " + length(road_subset) + " road segments.";
+	 	
+	 	//car
+	 	road_subset <- Road where (each.car_track);
+	 	road_weights_map <- road_subset as_map (each:: (each.shape.perimeter/each.max_speed));
+	 	car_road_graph <- as_edge_graph(Road) with_weights road_weights_map;
 	 	car_road_graph <- directed(car_road_graph);
-	 	write "Graphs are ready.";
+	 	write "Cars can use " + length(road_subset) + " road segments.";
+	 	write "Graphs created in " + (machine_time-t1)/1000.0 + " seconds.";
+	 }
+	 
+	 action normalize_modality {
+	 	float sum <- feet_weight + bike_weight + car_weight;
+	 	feet_weight <- feet_weight / sum ;
+	 	bike_weight <- bike_weight / sum ;
+	 	car_weight <- car_weight / sum ;
+	 }
+	 
+	 reflex stop when: after(starting_date + simulated_days#days) { //TODO marche pas
+	 	if current_date > starting_date {
+	 		do pause;
+	 	}
 	 }
 
 }
 
 
 experiment "test CT" type: gui {
+	parameter "Step" var: step category: "Simulation step in second" min:1.0 ;
+	parameter "Simulated_days" var: simulated_days category: "Simulation days" min:1.0 #days;
+	parameter "Pedestrians" var: feet_weight category: "modality" min:0.0;
+	parameter "Bikes" var: bike_weight category: "modality" min:0.0;
+	parameter "Cars" var: car_weight category: "modality" min:0.0;
+	
 	output {
 		display main_window type: opengl {
 			species Road;
@@ -191,11 +247,41 @@ experiment "test CT" type: gui {
 		
 		display "chart_display" {
 	        chart "lateness_chart" type: histogram {
-	        	datalist  (distribution_of(Person collect (each.total_lateness/length(each.personal_agenda.activities)),6,0, Person max_of(each.total_lateness/length(each.personal_agenda.activities))) at "legend") 
-	            value:(distribution_of(Person collect (each.total_lateness/length(each.personal_agenda.activities)),6,0,Person max_of(each.total_lateness/length(each.personal_agenda.activities))) at "values");      
+	        	datalist  (distribution_of(Person collect (each.total_lateness/(length(each.personal_agenda.activities))),6,0, Person max_of(each.total_lateness/(length(each.personal_agenda.activities)))) at "legend") 
+	            value:(distribution_of(Person collect (each.total_lateness/(length(each.personal_agenda.activities))),6,0,Person max_of(each.total_lateness/(length(each.personal_agenda.activities)))) at "values");      
 	        } 
         }
-		
+        
+        display "Persons moving" {
+        	chart "Persons moving" type: series {
+        		data "Persons moving" value: Person count(each.is_moving_chart = true) color:#black;
+        	}
+        }
+        display "Part modales" {
+        	chart "Part modales" type: pie {
+        		data "Cars" value: length(Car) color: #yellow;
+        		data "Bikes" value: length(Bike) color: #limegreen;
+        		data "Pedestrians" value: length(Feet) color: #darkgoldenrod;
+        	}        	
+        }
+		display "Activities" {
+        	chart "Activities" type: pie {
+        		data "Travail" value: Person count(each.current_activity.title = "Travail") color: #blue;
+        		data "Course" value: Person count(each.current_activity.title = "Course") color: #red;
+				data "Ecole" value: Person count(each.current_activity.title = "Ecole") color: #cyan;
+        		data "Fac" value: Person count(each.current_activity.title = "Fac") color: #cyan;
+				data "Promener chien" value: Person count(each.current_activity.title = "Promener chien") color: #green;
+        		data "Sport" value: Person count(each.current_activity.title = "Sport") color: #green;
+				data "accompagnement" value: Person count(each.current_activity.title = "accompagnement") color: #cyan;
+        		data "retour maison" value: Person count(each.current_activity.title = "retour maison") color: #grey;
+        	}        	
+        }
+        
+        display "road" {
+        	chart "Roads jammed" type: series {
+        		data "Jammed roads" value: Road count(each.is_jammed = true) color: #black;
+        	}
+        }
 //		monitor "Time: " value: current_date;
 
 	}

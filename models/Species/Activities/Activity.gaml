@@ -24,11 +24,11 @@ species Activity schedules: [] {
 		starting_date <- d add_minutes starting_minute;
 	}
 	
-	action choose_location (list<Building> living_buildings, list<Building> working_buildings){
-		if type=0 {
-			activity_location <- any_location_in(one_of(living_buildings));
-		}else{
-			activity_location <- any_location_in(one_of(working_buildings));
-		}
-	}
+//	action choose_location (list<Building> living_buildings, list<Building> working_buildings){
+//		if type=0 {
+//			activity_location <- any_location_in(one_of(living_buildings));
+//		}else{
+//			activity_location <- any_location_in(one_of(working_buildings));
+//		}
+//	}
 }

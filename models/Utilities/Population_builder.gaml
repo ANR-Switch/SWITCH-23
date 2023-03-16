@@ -8,6 +8,8 @@
 
 model Population_builder
 
+import "../World.gaml"
+
 import "../Species/Activities/Profile.gaml"
 
 import "../Species/Activities/Agenda.gaml"
@@ -23,8 +25,6 @@ species Population_builder schedules: [] {
 	
 	//useful param to pass for building population
 	date sim_starting_date; 
-	list<Building> working_buildings;
-	list<Building> living_buildings;
 	//
 	
 	//utility function return true if tested value is between min_value and max_value
@@ -34,7 +34,7 @@ species Population_builder schedules: [] {
 	
 	//utility function return true if the element is in the list
 	bool is_in(int looking_for,list<int> l){
-		loop element over:l{
+		loop element over:l {
 			if element=looking_for{
 				return true;
 			}
@@ -80,7 +80,7 @@ species Population_builder schedules: [] {
 				
 			////	
 			
-			loop i from: 0 to: 0 {
+			loop i from: 0 to: 1 {
 			create Person from: (self.select(params: myself.param,	//create all the individu
 				select: "SELECT * FROM individu"))
 				with:[first_name::"nom",age::"age",genre::"genre",professional_activity::"activite_pro",income::"revenu",study_level::"etudes"];
@@ -125,10 +125,15 @@ species Population_builder schedules: [] {
 //		}
 //	}
 	
-	action set_all_living{
+	action set_all_building{
 		loop ppl over: Person{
 			ask ppl {
-				do select_living_building(myself.living_buildings);
+				living_building <- select_building(living_buildings);
+				location <- any_location_in(living_building);
+				working_building <- select_building(working_buildings);
+				studying_building <- select_building(studying_buildings);
+				commercial_building <- select_building(commercial_buildings);
+				leasure_building <- select_building(leasure_buildings);
 			}
 		}
 	}
@@ -146,7 +151,7 @@ species Population_builder schedules: [] {
 			loop a over:ppl.personal_agenda.activities{
 				ask a {					
 					do set_starting_date(myself.sim_starting_date);
-					do choose_location(myself.living_buildings, myself.working_buildings);						
+//					do choose_location(myself.living_buildings, myself.working_buildings);						
 				}
 			}
 //			ask ppl {
@@ -171,7 +176,7 @@ species Population_builder schedules: [] {
 	action initialize_population{
 		do create_agent_with_bdd ;
 		do link_indiv_profile;
-		do set_all_living;
+		do set_all_building;
 		do set_all_agendas;
 		do set_all_persons_activities;
 //		do register_all_first_activities; has to be done after linking them to a manager so in world.gaml

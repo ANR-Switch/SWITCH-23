@@ -14,11 +14,9 @@ model Car
 import "Vehicle.gaml"
 
 species Car parent: Vehicle schedules: [] {
-	
-	action init {
-//		has_width <- true;
-		traffic_influence <- 1.0;
-		subject_to_flow <- true;
+
+	init {
+		color <- #yellow;
 	}
 	
 	action init_vehicle(Person _owner, float _length<-4.0#meter, float _speed<-130#km/#h, int _seats<-4){
@@ -43,6 +41,7 @@ species Car parent: Vehicle schedules: [] {
 			if my_path = nil {
 				write get_current_date() + ": " + name + " is not able to find a path between " + location + " and " + my_destination color: #red;
 				write "The motion will not be done. \n The activity: " + owner.current_activity.title + " of: " + owner.name + " might be done in the wrong location." color: #orange;
+				owner.location <- any_location_in(owner.current_activity.activity_location);
 				ask owner {
 					do end_motion;
 				}
@@ -75,9 +74,8 @@ species Car parent: Vehicle schedules: [] {
 		location <- road.location;
 		loop p over: passengers {
 			p.location <- location;
+			p.color <- color;
 		} 
-//		owner.location <- self.location;
-		owner.color <- #yellow;
 		remove index: 0 from: my_path.edges;
 	}
 	
@@ -92,7 +90,7 @@ species Car parent: Vehicle schedules: [] {
 			write get_current_date() + ": Something is wrong with " + name + "\n Belonging to " + owner.name color:#orange;
 		}
 		current_road <- nil;
-		owner.location <- my_destination;
+//		owner.location <- my_destination;
 		
 		//compute lateness for chart display
 		float _lateness <- (get_current_date() - theoretical_arrival_date);

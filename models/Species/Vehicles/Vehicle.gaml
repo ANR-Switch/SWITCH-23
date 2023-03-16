@@ -15,7 +15,7 @@ import "../../World.gaml"
  */
 
 species Vehicle virtual: true schedules: [] {
-//	rgb color;
+	rgb color;
 	float length;
 	float speed <- 0.0 #km / #h;
 	Person owner;
