@@ -30,11 +30,15 @@ species Person skills: [scheduling] schedules: [] {
 	int study_level;
 	list<int> profile;
 	Agenda personal_agenda;
+	Building current_building;
+	Building next_building;
 	Building living_building;
 	Building working_building;
 	Building commercial_building;
 	Building studying_building;
 	Building leasure_building;
+	
+	//
 	int act_idx <- 0; 
 	Activity current_activity;
 	
@@ -51,6 +55,7 @@ species Person skills: [scheduling] schedules: [] {
 	
 	//output display
 	bool is_moving_chart <- false; //used for display
+	list<list<Road>> past_motions;
 	
 	init {
 		do choose_vehicle();
@@ -102,24 +107,30 @@ species Person skills: [scheduling] schedules: [] {
 		switch int(current_activity.type){
 			match 0 {
 				current_dest <- any_location_in(living_building);
+				next_building <- living_building;
 			}
 			match 1 {
 				current_dest <- any_location_in(working_building);
+				next_building <- working_building;
 			}
 			match 2 {
 				current_dest <- any_location_in(studying_building);
+				next_building <- studying_building;
 			}
 			match 3 {
 				current_dest <- any_location_in(commercial_building);
+				next_building <- commercial_building;
 			}
 			match 4 {
 //				dest <- any_location_in(living_building); TODO
 			}
 			match 5 {
 				current_dest <- any_location_in(leasure_building);
+				next_building <- leasure_building;
 			}
 			match 6 {
 				current_dest <- any_location_in(studying_building);
+				next_building <- studying_building;
 			}
 			default {
 				write "Weird activity !" color: #red;
@@ -173,13 +184,16 @@ species Person skills: [scheduling] schedules: [] {
     
     action end_motion {
     	location <- current_dest;
+    	current_building <- next_building;
+    	color <- current_building.color;
+    	is_moving_chart <- false;
+    	
+    	total_travel_time <- total_travel_time + (get_current_date() - start_motion_date);
+    	
     	ask vehicle{
     		do remove_passenger(myself);
     	}
     	write get_current_date() + ": " + name + " starts doing: " + current_activity.title;
-    	color <- #blue;
-    	is_moving_chart <- false;
-    	total_travel_time <- total_travel_time + (get_current_date() - start_motion_date);
     	
     	if act_idx < length(personal_agenda.activities) - 1 {
     		if lateness > lateness_tolerance {
@@ -235,22 +249,19 @@ species Person skills: [scheduling] schedules: [] {
 	    	  	}
     		}
     	}
-//    	if flip(Constants[0].cyclists_ratio){
-//    		create Bike returns: b;
-//    	  	ask b {
-//    	  		do init_vehicle(myself);
-//    	  	}
-//    	}else{
-//    		create Car returns: c;
-//    	  	ask c {
-//    	  		do init_vehicle(myself);
-//    	  	}
-//    	}
     }
-    
-    action set_color(rgb c) {
-    	color <- c;
-    }
+   
+   action highlight_motion(int i){
+   		if length(past_motions) > i {
+   			loop r over: past_motions[i] {
+   				ask r {
+   					do highlight;
+   				}
+   			}
+   		}else{
+   			write "Cannot highlight the motion as " + name + " only registered " + length(past_motions) + " motions.";
+   		}
+   }
     
     aspect default {
     	draw circle(8) color: color border: #black;

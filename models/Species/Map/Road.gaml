@@ -34,12 +34,13 @@ species Road skills: [scheduling] schedules: [] {
 	float inflow_delay <- 1.0 const: true;
 	float outflow_delay <- 1.0 const: true;
 	float gap_travel_time <- shape.perimeter / 2; 
-	int deadlock_delay <- 2 const: true; //minutes to try to force the car inside the road
+	int deadlock_patience <- Constants[0].deadlock_patience; //minutes to try to force the car inside the road
 	list<pair<Vehicle, date>> _queue; //queue is a build-in name so we use _queue
 	list<Vehicle> waiting_list;
 	
 	//test
-	float max_tmp_alocated_test;	
+	float max_tmp_alocated_test;
+	int car_counter_ <- 0;	
 	
 	//output display
 	bool is_jammed <- false;
@@ -143,7 +144,7 @@ species Road skills: [scheduling] schedules: [] {
 		}else{			
 			add vehicle to: waiting_list;
 			vehicle.owner.color <- #orange;
-			date t <- get_current_date() add_minutes deadlock_delay;
+			date t <- get_current_date() add_minutes deadlock_patience;
 			do later the_action: "deadlock_prevention" with_arguments: map("vehicle"::vehicle) at: t;		
 		}
 	}
@@ -222,6 +223,7 @@ species Road skills: [scheduling] schedules: [] {
 			current_capacity <- current_capacity + vehicle.length;
 			add pair(vehicle::leave_date) to: _queue;
 			last_entry <- get_current_date();
+			car_counter_ <- car_counter_ + 1;
 		}else{
 			write get_current_date() + ": " + name+ " tried to add " + vehicle.name + " but it was already in queue. This should not happen." color:#red;
 		}
@@ -232,23 +234,31 @@ species Road skills: [scheduling] schedules: [] {
 		//TODO IMPORTANT: not coorect, avec ça, le temps n'augmente pas correctement car on sera jamais au dessus de 1 en ratio capacity/max_capacity
 		if waiting_list contains vehicle {
 			is_jammed <- true;
-			write get_current_date() + ": " + vehicle.name + " is forcing its way on " + name color:#orange;
-			float tmp_allocated_capacity <- vehicle.length + 0.01;
-			max_capacity <- max_capacity + tmp_allocated_capacity;
-			remove vehicle from: waiting_list ;
-			do accept(vehicle);
-			do later the_action: "remove_deadlock_capacity" with_arguments: map("tmp_allocated_capacity"::tmp_allocated_capacity) at: get_current_date() add_minutes 3;
+			if current_capacity < 2 * max_capacity {
+				
+				write get_current_date() + ": " + vehicle.name + " is forcing its way on " + name color:#orange;
+				float tmp_allocated_capacity <- vehicle.length + 0.01;
+				max_tmp_alocated_test <- max_tmp_alocated_test + tmp_allocated_capacity; //TODO remove after test
+	//			max_capacity <- max_capacity + tmp_allocated_capacity;
+				remove vehicle from: waiting_list ;
+				do accept(vehicle);
+				do later the_action: "remove_deadlock_capacity" with_arguments: map("tmp_allocated_capacity"::tmp_allocated_capacity) at: get_current_date() add_minutes deadlock_patience;
+			}else{
+				//try again later
+				//we do this to prevent having the current_capacity above 10 times the max_capacity, which can quickly happen with deadlocks
+				date t <- get_current_date() add_minutes deadlock_patience;
+				do later the_action: "deadlock_prevention" with_arguments: map("vehicle"::vehicle) at: t;
+			}	
 		}
 	}
 	
 	action remove_deadlock_capacity (float tmp_allocated_capacity) {
 		//its better to always have the current_capacity below the max
 		if current_capacity < max_capacity - tmp_allocated_capacity {
-			max_capacity <- max_capacity - tmp_allocated_capacity;	
+			//max_capacity <- max_capacity - tmp_allocated_capacity;	
 			is_jammed <- false;
-			max_tmp_alocated_test <- max_tmp_alocated_test + tmp_allocated_capacity; //TODO remove after test
 		}else{
-			do later the_action: "remove_deadlock_capacity" with_arguments: map("tmp_allocated_capacity"::tmp_allocated_capacity) at: get_current_date() add_minutes 3;
+			do later the_action: "remove_deadlock_capacity" with_arguments: map("tmp_allocated_capacity"::tmp_allocated_capacity) at: get_current_date() add_minutes deadlock_patience;
 		}
 	}
 	
@@ -284,15 +294,6 @@ species Road skills: [scheduling] schedules: [] {
 	}
 	
 	action allowed_vehicles_init {
-//		list<list<int>> l <- to_list(allowed_vehicles);
-//		loop e over: to_list(allowed_vehicles) {
-//			write e;
-//		}
-//		loop e over: l {
-////		write "deux " + e;
-//		
-//		}
-//		write " " + l;
 		if allowed_vehicles contains "0" {
 			car_track <- true;
 		}
@@ -306,10 +307,13 @@ species Road skills: [scheduling] schedules: [] {
 			public_transport_track <- true;
 		}
 	}
+	
+	action highlight {
+		draw displayed_shape color: #cyan; //TODO not working ?
+	}
 
 	aspect default {
 		draw displayed_shape color: rgb(255 * (current_capacity / max_capacity), 0, 0);
-//		draw "" + length(_queue) + " " at: location + point([15, 15]) size: 10 color: #black;
 	}
 
 }

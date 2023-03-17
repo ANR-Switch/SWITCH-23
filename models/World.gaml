@@ -19,7 +19,7 @@ import "Species/Map/Building.gaml"
 import "Utilities/Population_builder.gaml"
 
 global {	
-	float step <- 600 #seconds parameter: "Step"; //86400 for a day
+	float step <- 360 #seconds parameter: "Step"; //86400 for a day
 	float simulated_days <- 1 #days parameter: "Simulated_days";
 	
 	//loading parameters
@@ -35,9 +35,9 @@ global {
 	date starting_date <- date([1970, 1, 1, 6, 0, 0]);
 	date sim_starting_date <- date([1970, 1, 1, 0, 0, 0]); //has to start at midnight! for activity.gaml init
 
-	float bike_weight <- 0.1 parameter: "Bike";
-	float feet_weight <- 0.1 parameter: "Feet";
-	float car_weight <- 0.8 parameter: "Car";
+	float bike_weight <- 0.25 parameter: "Bike";
+	float feet_weight <- 0.05 parameter: "Feet";
+	float car_weight <- 0.7 parameter: "Car";
 
 	int nb_event_managers <- 1;
 	
@@ -246,24 +246,26 @@ experiment "test CT" type: gui {
 		}
 		
 		display "chart_display" {
-	        chart "lateness_chart" type: histogram {
+	        chart "Mean per-travel-lateness" type: histogram {
 	        	datalist  (distribution_of(Person collect (each.total_lateness/(length(each.personal_agenda.activities))),6,0, Person max_of(each.total_lateness/(length(each.personal_agenda.activities)))) at "legend") 
 	            value:(distribution_of(Person collect (each.total_lateness/(length(each.personal_agenda.activities))),6,0,Person max_of(each.total_lateness/(length(each.personal_agenda.activities)))) at "values");      
 	        } 
         }
         
         display "Persons moving" {
-        	chart "Persons moving" type: series {
+        	chart "Moving persons" type: series {
         		data "Persons moving" value: Person count(each.is_moving_chart = true) color:#black;
         	}
-        }
+        } 
+        
         display "Part modales" {
-        	chart "Part modales" type: pie {
-        		data "Cars" value: length(Car) color: #yellow;
-        		data "Bikes" value: length(Bike) color: #limegreen;
-        		data "Pedestrians" value: length(Feet) color: #darkgoldenrod;
+        	chart "Parts modales" type: pie {
+        		data "Cars" value: Person count(each.is_moving_chart and species(each.vehicle)=Car) color: #yellow;
+        		data "Bikes" value: Person count(each.is_moving_chart and species(each.vehicle)= Bike) color: #limegreen;
+        		data "Pedestrians" value: Person count(each.is_moving_chart and species(each.vehicle)= Feet) color: #darkgoldenrod;
         	}        	
         }
+        
 		display "Activities" {
         	chart "Activities" type: pie {
         		data "Travail" value: Person count(each.current_activity.title = "Travail") color: #blue;
@@ -278,8 +280,17 @@ experiment "test CT" type: gui {
         }
         
         display "road" {
-        	chart "Roads jammed" type: series {
+        	chart "Jammed roads" type: series {
         		data "Jammed roads" value: Road count(each.is_jammed = true) color: #black;
+        	}
+        }
+        
+        display "Road capacity" {
+        	chart "Road capacity distribution" type: histogram {
+        		data "]0;0.33]" value: Road count (each.current_capacity/each.max_capacity <= 0.33) color: #green ;
+    			data "]0.33;0.66]" value: Road count ((each.current_capacity/each.max_capacity > 0.33) and (each.current_capacity/each.max_capacity <= 0.66)) color: #yellow ;
+    			data "]0.67;1]" value: Road count ((each.current_capacity/each.max_capacity > 0.66) and (each.current_capacity/each.max_capacity <= 1.0)) color: #red ;
+    			data "]1;*]" value: Road count (each.current_capacity/each.max_capacity > 0.1) color: #darkred;
         	}
         }
 //		monitor "Time: " value: current_date;

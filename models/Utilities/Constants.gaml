@@ -14,6 +14,7 @@ species Constants {
 	int starting_time_randomiser <- 15 const: true; //minutes
 	float lateness_tolerance <- 300.0 const: true; //seconds
 	
-	//person
+	//road
+	int deadlock_patience <- 5 const:true; //minutes
 }
 

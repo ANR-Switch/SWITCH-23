@@ -24,6 +24,7 @@ species Vehicle virtual: true schedules: [] {
 	point my_destination;
 	path my_path;
 	Road current_road <- nil;
+	list<Road> past_roads;
 	//other attributes less important
 	date theoretical_arrival_date;
 	

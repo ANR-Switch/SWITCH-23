@@ -30,6 +30,7 @@ species Feet parent: Vehicle schedules: [] {
 	}
 	
 	action goto(point dest){
+		past_roads <- [];
 		if !empty(passengers) {
 			//init
 			current_road <- nil;
@@ -75,6 +76,7 @@ species Feet parent: Vehicle schedules: [] {
 			p.location <- location;
 			p.color <- color;
 		} 
+		add Road(my_path.edges[0]) to: past_roads;
 		remove index: 0 from: my_path.edges;
 	}
 	
@@ -102,6 +104,7 @@ species Feet parent: Vehicle schedules: [] {
 			write "Lateness is negative, this should not happen." color:#red;
 		}
 		
+		add past_roads to: owner.past_motions;
 		ask owner {
 			do end_motion; //this may kill the vehicle so make sure this is our last action
 		}
