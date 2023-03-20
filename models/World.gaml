@@ -19,7 +19,7 @@ import "Species/Map/Building.gaml"
 import "Utilities/Population_builder.gaml"
 
 global {	
-	float step <- 360 #seconds parameter: "Step"; //86400 for a day
+	float step <- 1 #seconds parameter: "Step"; //86400 for a day
 	float simulated_days <- 1 #days parameter: "Simulated_days";
 	
 	//loading parameters
@@ -36,7 +36,7 @@ global {
 	date sim_starting_date <- date([1970, 1, 1, 0, 0, 0]); //has to start at midnight! for activity.gaml init
 
 	float feet_weight <- 0.0 parameter: "Feet";
-	float bike_weight <- 0.3 parameter: "Bike";
+	float bike_weight <- 0.0 parameter: "Bike";
 	float car_weight <- 0.7 parameter: "Car";
 
 	int nb_event_managers <- 1;

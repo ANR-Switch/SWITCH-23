@@ -95,7 +95,8 @@ species Car parent: Vehicle schedules: [] {
 		color <- parking_color;
 		//delete from previous road
 		if current_road != nil {
-			location <- one_of(current_road.displayed_shape.points);
+			list<point> p <- current_road.displayed_shape closest_points_with(owner.current_destination);
+			location <- p[0];
 			ask current_road {
 				bool found <- remove(myself);	
 				assert found warning: true;
