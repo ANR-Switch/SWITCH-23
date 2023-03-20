@@ -14,19 +14,28 @@ model Car
 import "Vehicle.gaml"
 
 species Car parent: Vehicle schedules: [] {
-
+	rgb parking_color <- rgb([165, 165, 0]);
+	rgb driving_color <- #yellow;
+	
 	init {
-		color <- #yellow;
+		color <- parking_color;
 	}
 	
 	action init_vehicle(Person _owner, float _length<-4.0#meter, float _speed<-130#km/#h, int _seats<-4){
 		owner <- _owner;
 //		do add_passenger(owner);
-		location <- _owner.location;
 		length <- _length;
 		speed <- _speed;
 		seats <- _seats;
-		owner.vehicle <- self;
+		add self to: owner.vehicles;
+		owner.current_vehicle <- self;		
+		
+		//set location
+//		location <- _owner.location; //simple way
+		list<Road> car_road_subset <- Road where (each.car_track);
+		Road closest_road <- car_road_subset closest_to(owner.location);
+		list<point> l <- closest_road.displayed_shape closest_points_with (owner.location); 
+		location <- l[0];
 	}
 	
 	action goto(point dest){
@@ -40,7 +49,7 @@ species Car parent: Vehicle schedules: [] {
 			my_path <- path_between(car_road_graph, location, my_destination);
 //			write "time : >>> " + (machine_time - t1) + " milliseconds" color: #green;
 			if my_path = nil {
-				write get_current_date() + ": " + name + " is not able to find a path between " + owner.current_building + " and " + owner.next_building color: #red;
+				write get_current_date() + ": " + name + " belonging to: " + owner.name +" is not able to find a path between " + owner.current_building + " and " + owner.next_building color: #red;
 				write "The motion will not be done. \n The activity: " + owner.current_activity.title + " of: " + owner.name + " might be done in the wrong location." color: #orange;
 				owner.location <- any_location_in(owner.current_activity.activity_location);
 				ask owner {
@@ -71,6 +80,7 @@ species Car parent: Vehicle schedules: [] {
 	}
 	
 	action enter_road(Road road){
+		color <- driving_color;
 		current_road <- road;
 		location <- road.location;
 		loop p over: passengers {
@@ -82,8 +92,10 @@ species Car parent: Vehicle schedules: [] {
 	}
 	
 	action arrive_at_destination {
+		color <- parking_color;
 		//delete from previous road
 		if current_road != nil {
+			location <- one_of(current_road.displayed_shape.points);
 			ask current_road {
 				bool found <- remove(myself);	
 				assert found warning: true;
@@ -107,7 +119,7 @@ species Car parent: Vehicle schedules: [] {
 		
 		add past_roads to: owner.past_motions;
 		ask owner {
-			do end_motion; //this may kill the vehicle so make sure this is our last action
+			do walk_to(current_destination); //this may kill the vehicle so make sure this is our last action
 		}
 	}
 	
@@ -120,5 +132,9 @@ species Car parent: Vehicle schedules: [] {
 		}
 		return t;
 	} 
+	
+	aspect default {
+		draw circle(7) color: color border: #black;
+	}
 }
 

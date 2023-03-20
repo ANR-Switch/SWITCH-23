@@ -35,8 +35,8 @@ global {
 	date starting_date <- date([1970, 1, 1, 6, 0, 0]);
 	date sim_starting_date <- date([1970, 1, 1, 0, 0, 0]); //has to start at midnight! for activity.gaml init
 
-	float bike_weight <- 0.25 parameter: "Bike";
-	float feet_weight <- 0.05 parameter: "Feet";
+	float feet_weight <- 0.0 parameter: "Feet";
+	float bike_weight <- 0.3 parameter: "Bike";
 	float car_weight <- 0.7 parameter: "Car";
 
 	int nb_event_managers <- 1;
@@ -240,9 +240,7 @@ experiment "test CT" type: gui {
 			species Road;
 			species Building;
 			species Person;
-//			species Bike;
-//			species Car;
-//			species Truck;
+			species Car;
 		}
 		
 		display "chart_display" {
@@ -260,9 +258,9 @@ experiment "test CT" type: gui {
         
         display "Part modales" {
         	chart "Parts modales" type: pie {
-        		data "Cars" value: Person count(each.is_moving_chart and species(each.vehicle)=Car) color: #yellow;
-        		data "Bikes" value: Person count(each.is_moving_chart and species(each.vehicle)= Bike) color: #limegreen;
-        		data "Pedestrians" value: Person count(each.is_moving_chart and species(each.vehicle)= Feet) color: #darkgoldenrod;
+        		data "Cars" value: Person count(each.is_moving_chart and species(each.current_vehicle)=Car) color: #yellow;
+        		data "Bikes" value: Person count(each.is_moving_chart and species(each.current_vehicle)= Bike) color: #limegreen;
+        		data "Pedestrians" value: Person count(each.is_moving_chart and species(each.current_vehicle)= Feet) color: #darkgoldenrod;
         	}        	
         }
         

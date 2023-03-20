@@ -125,7 +125,7 @@ species Population_builder schedules: [] {
 //		}
 //	}
 	
-	action set_all_building{
+	action set_all_buildings{
 		loop ppl over: Person{
 			ask ppl {
 				living_building <- select_building(living_buildings);
@@ -135,6 +135,14 @@ species Population_builder schedules: [] {
 				studying_building <- select_building(studying_buildings);
 				commercial_building <- select_building(commercial_buildings);
 				leasure_building <- select_building(leasure_buildings);
+			}
+		}
+	}
+	
+	action set_all_vehicles {
+		loop ppl over: Person {
+			ask ppl {
+				do choose_vehicle;
 			}
 		}
 	}
@@ -177,7 +185,8 @@ species Population_builder schedules: [] {
 	action initialize_population{
 		do create_agent_with_bdd ;
 		do link_indiv_profile;
-		do set_all_building;
+		do set_all_buildings;
+		do set_all_vehicles;
 		do set_all_agendas;
 		do set_all_persons_activities;
 //		do register_all_first_activities; has to be done after linking them to a manager so in world.gaml

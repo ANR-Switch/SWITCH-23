@@ -26,7 +26,8 @@ species Bike parent: Vehicle schedules: [] {
 		length <- _length;
 		speed <- _speed;
 		seats <- _seats;
-		owner.vehicle <- self;
+		add self to: owner.vehicles;
+		owner.current_vehicle <- self;
 	}
 	
 	action goto(point dest){
@@ -40,7 +41,7 @@ species Bike parent: Vehicle schedules: [] {
 			my_path <- path_between(bike_road_graph, location, my_destination);
 //			write "time : >>> " + (machine_time - t1) + " milliseconds" color: #green;
 			if my_path = nil {
-				write get_current_date() + ": " + name + " is not able to find a path between " + location + " and " + my_destination color: #red;
+				write get_current_date() + ": " + name + " belonging to: " + owner.name +" is not able to find a path between " + owner.current_building + " and " + owner.next_building color: #red;
 				write "The motion will not be done. \n The activity: " + owner.current_activity.title + " of: " + owner.name + " might be done in the wrong location." color: #orange;
 				ask owner {
 					do end_motion;

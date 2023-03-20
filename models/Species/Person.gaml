@@ -43,28 +43,26 @@ species Person skills: [scheduling] schedules: [] {
 	Activity current_activity;
 	
 	//
-	point current_dest; 
+	point current_destination; 
 	date start_motion_date;
 	float total_travel_time <- 0.0;
 	float lateness <- 0.0;
 	float total_lateness <- 0.0;
 	float lateness_tolerance <- Constants[0].lateness_tolerance const: true; //seconds
 	float theoretical_travel_duration;
+	float walking_speed <- 1.39 ; //#meter / #second ;
 	rgb color <- #black;
-	Vehicle vehicle;
+	Vehicle current_vehicle;
+	list<Vehicle> vehicles <- [];
 	
 	//output display
 	bool is_moving_chart <- false; //used for display
 	list<list<Road>> past_motions;
 	
-	init {
-		do choose_vehicle();
-	}
-	
-//	action select_living_building(list<Building> living_buildings){
-//		living_building <- one_of(living_buildings);
-//		location <- any_location_in(living_building);
+//	init {
+//
 //	}
+
 	
 	Building select_building (list<Building> l){
 		return one_of(l);
@@ -90,10 +88,6 @@ species Person skills: [scheduling] schedules: [] {
     		current_activity <- personal_agenda.activities[0];
     		date d <- current_activity.starting_date add_minutes rnd(-floor(Constants[0].starting_time_randomiser/2), floor(Constants[0].starting_time_randomiser/2));
     	  	do later the_action: "start_activity" at: d ;
-//    	  	create Car returns: c;
-//    	  	ask c {
-//    	  		do init_vehicle(myself);
-//    	  	}
     	}else{
     		write get_current_date() + ": " + name + " will do nothing today.";
     	}
@@ -102,34 +96,34 @@ species Person skills: [scheduling] schedules: [] {
     
     
     action start_activity {    	
-    	assert vehicle != nil warning: true;
+    	assert !empty(vehicles) warning: true;
 //    	assert current_activity.activity_location != nil warning: true;
 		switch int(current_activity.type){
 			match 0 {
-				current_dest <- any_location_in(living_building);
+				current_destination <- any_location_in(living_building);
 				next_building <- living_building;
 			}
 			match 1 {
-				current_dest <- any_location_in(working_building);
+				current_destination <- any_location_in(working_building);
 				next_building <- working_building;
 			}
 			match 2 {
-				current_dest <- any_location_in(studying_building);
+				current_destination <- any_location_in(studying_building);
 				next_building <- studying_building;
 			}
 			match 3 {
-				current_dest <- any_location_in(commercial_building);
+				current_destination <- any_location_in(commercial_building);
 				next_building <- commercial_building;
 			}
 			match 4 {
 //				dest <- any_location_in(living_building); TODO
 			}
 			match 5 {
-				current_dest <- any_location_in(leasure_building);
+				current_destination <- any_location_in(leasure_building);
 				next_building <- leasure_building;
 			}
 			match 6 {
-				current_dest <- any_location_in(studying_building);
+				current_destination <- any_location_in(studying_building);
 				next_building <- studying_building;
 			}
 			default {
@@ -137,8 +131,12 @@ species Person skills: [scheduling] schedules: [] {
 			}
 		}
     	
-		if location != current_dest {
-			do start_motion(current_dest);
+		if location != current_destination {
+			if species(current_vehicle) = Car {
+				do walk_to(current_vehicle.location);
+			}else{
+				do start_motion;	
+			}
 		}else{
 			color <- #blue;
 			write name + " is already at its destination. It will do its activity directly.";
@@ -165,32 +163,29 @@ species Person skills: [scheduling] schedules: [] {
     		}
     	}else{
     		write get_current_date() + ": " + name + " ended its day."; 
-//    		ask vehicle {
-//    			do die;
-//    		}
     	}
     }
     
-    action start_motion(point p){
-    	write get_current_date() + ": " + name + " takes vehicle: " + vehicle.name + " to do: " + current_activity.title;
-//    	color <- vehicle.color;
+    
+    action start_motion{
+    	write get_current_date() + ": " + name + " takes vehicle: " + current_vehicle.name + " to do: " + current_activity.title;
     	start_motion_date <- get_current_date();
     	is_moving_chart <- true;
-    	ask vehicle{
+    	ask current_vehicle{
     		do add_passenger(myself);
-			do goto(p);
+			do goto(myself.current_destination);
 		}
     }
     
     action end_motion {
-    	location <- current_dest;
+//    	location <- current_destination;
     	current_building <- next_building;
     	color <- current_building.color;
     	is_moving_chart <- false;
     	
     	total_travel_time <- total_travel_time + (get_current_date() - start_motion_date);
     	
-    	ask vehicle{
+    	ask current_vehicle{
     		do remove_passenger(myself);
     	}
     	write get_current_date() + ": " + name + " starts doing: " + current_activity.title;
@@ -227,6 +222,41 @@ species Person skills: [scheduling] schedules: [] {
     	}    	
     }
     
+    action walk_to(point p) {
+    	color <- #darkgoldenrod;
+    	float d <- distance_to(location, p) #meter ;
+    	
+    	if d > walking_speed {
+    		//move
+    		//set vehicle to feet
+    		float angle <- atan2(p.y - location.y, p.x - location.x);
+    		location <- point(location.x + walking_speed * cos(angle), location.y + walking_speed * sin(angle));
+    		
+    		do later the_action: "walk_to" with_arguments: map("p"::p) at:get_current_date() add_seconds 1;
+    	}else{
+    		//motion over
+    		bool found <- false;
+    		location <- p;
+    		
+    		/*
+    		 * here we have to find out what action we were supposed to perform
+    		 * we do it by checking what was our destination in the first place
+    		 * only two cases should appear : 
+    		 * either we joined our current_vehicle
+    		 * either we walked to our activity location
+    		 */
+    		if location = current_destination {
+    			found <- true;
+    			do end_motion;
+    		}else if location = current_vehicle.location {
+				found <- true;
+				do start_motion;
+			}else{
+				write get_current_date() + ": Something is wrong with the fct walk_to() of: " + name color:#red;  			
+    		}
+    	}    	
+    }
+    
     action choose_vehicle {
     	int choice <- rnd_choice([feet_weight, bike_weight, car_weight]);
     	switch int(choice) {
@@ -248,6 +278,9 @@ species Person skills: [scheduling] schedules: [] {
 	    	  		do init_vehicle(myself);
 	    	  	}
     		}
+    		default {
+    			write name + " has a ill-defined vehicle !" color: #red;
+    		}
     	}
     }
    
@@ -264,7 +297,7 @@ species Person skills: [scheduling] schedules: [] {
    }
     
     aspect default {
-    	draw circle(8) color: color border: #black;
+    	draw circle(10) color: color border: #black;
     }
 	
 	
