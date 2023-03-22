@@ -310,6 +310,11 @@ species Road skills: [scheduling] schedules: [] {
 		if allowed_vehicles contains "3" {
 			public_transport_track <- true;
 		}
+		
+		//colors
+		if !car_track and !public_transport_track {
+			color <- #darkgoldenrod;
+		}
 	}
 
 	aspect default {

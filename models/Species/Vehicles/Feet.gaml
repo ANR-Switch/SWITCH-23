@@ -45,6 +45,7 @@ species Feet parent: Vehicle schedules: [] {
 				write "The motion will not be done. \n The activity: " + owner.current_activity.title + " of: " + owner.name + " might be done in the wrong location." color: #orange;
 				owner.location <- any_location_in(owner.current_activity.activity_location);
 				owner.skipped_travels <- owner.skipped_travels + 1;
+				add [] to: owner.past_paths;
 				ask owner {
 					do end_motion;
 				}

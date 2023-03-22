@@ -50,6 +50,7 @@ species Person skills: [scheduling] schedules: [] {
 	point current_destination; 
 	date start_motion_date;
 	float total_travel_time <- 0.0;
+	float total_distance_travelled <- 0.0;
 	float lateness <- 0.0;
 	float total_lateness <- 0.0;
 	float lateness_tolerance <- Constants[0].lateness_tolerance const: true; //seconds
@@ -176,6 +177,7 @@ species Person skills: [scheduling] schedules: [] {
     		}
     	}else{
     		day_done <- true;
+    		do compute_total_distance_travelled;
     		write get_current_date() + ": " + name + " ended its day."; 
     	}
     }
@@ -297,16 +299,28 @@ species Person skills: [scheduling] schedules: [] {
     		}
     	}
     }
+    
+    action compute_total_distance_travelled {
+    	loop p over: past_paths {
+    		loop r over: p {
+    			total_distance_travelled <- total_distance_travelled + r.shape.perimeter;
+    		}
+    	}
+    }
    
    action highlight_path(int i){
    		if length(past_paths) > i {
-   			write get_current_date() + ": " + name + " highlight its motion: " + i;
-   			loop r over: past_paths[i] {
-   				ask r {
-   					color <- #red;
-   				}
-   			}
-//   			do later the_action: "cancel_highlight" with_arguments:map("i"::i) at: get_current_date() add_seconds 1;
+   			if !empty(past_paths[i]){
+	   			write get_current_date() + ": " + name + " highlight its motion: " + i;
+	   			loop r over: past_paths[i] {
+	   				ask r {
+	   					color <- #red;
+	   				}
+	   			}
+	//   			do later the_action: "cancel_highlight" with_arguments:map("i"::i) at: get_current_date() add_seconds 1;
+			}else{
+				write "This motion did not occur for some reason. Probably because the vehicle was not able to find a path.";
+			}
    		}else{
    			write name + " cannot highlight the motion because it has only registered " + length(past_paths) + " motions yet." color: #red;
    		}

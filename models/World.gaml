@@ -37,8 +37,8 @@ global {
 	date sim_starting_date <- date([1970, 1, 1, 0, 0, 0]); //has to start at midnight! for activity.gaml init
 
 	//modality
-	float feet_weight <- 0.0 parameter: "Feet";
-	float bike_weight <- 0.0 parameter: "Bike";
+	float feet_weight <- 0.2 parameter: "Feet";
+	float bike_weight <- 0.2 parameter: "Bike";
 	float car_weight <- 0.6 parameter: "Car";
 	//highlight path
 	int Person_idx <- 0 parameter: "Person_idx";
@@ -167,7 +167,15 @@ global {
 				}	
 			}
 		}
-		write "There are " + length(Building) + " Buildings loaded in " + (machine_time-t1)/1000.0 + " seconds.";
+		write "There are " + length(Building) + " Buildings loaded in " + (machine_time-t1)/1000.0 + " seconds. \n Among which :";
+		write " " + length(living_buildings) + " are living buildings,";
+		write " " + length(working_buildings) + " are working buildings,";
+		write " " + length(studying_buildings) + " are studying buildings,";
+		write " " + length(commercial_buildings) + " are commercial buildings,";
+		write " " + length(administrative_buildings) + " are administrative buildings,";
+		write " " + length(leasure_buildings) + " are leasure buildings,";
+		write " " + length(exterior_working_buildings) + " are exterior_working zones.";
+		
 	 }
 	 
 	 action init_roads {
@@ -317,7 +325,7 @@ experiment "Display & Graphs" type: gui {
         		data "]0;0.33]" value: Road count (each.current_capacity/each.max_capacity <= 0.33) color: #green ;
     			data "]0.33;0.66]" value: Road count ((each.current_capacity/each.max_capacity > 0.33) and (each.current_capacity/each.max_capacity <= 0.66)) color: #yellow ;
     			data "]0.67;1]" value: Road count ((each.current_capacity/each.max_capacity > 0.66) and (each.current_capacity/each.max_capacity <= 1.0)) color: #red ;
-    			data "]1;*]" value: Road count (each.current_capacity/each.max_capacity > 0.1) color: #darkred;
+    			data "]1;*]" value: Road count (each.current_capacity/each.max_capacity > 1.0) color: #darkred;
         	}
         }
 //		monitor "Time: " value: current_date;
@@ -361,19 +369,19 @@ experiment "Display only" type: gui {
 	}
 }
 
-experiment "Headless" type: gui {
-	parameter "Step" var: step category: "Simulation step in second" min:1.0 ;
-	parameter "Simulated_days" var: simulated_days category: "Simulation days" min:1.0 #days;
-	parameter "Pedestrians" var: feet_weight category: "modality" min:0.0;
-	parameter "Bikes" var: bike_weight category: "modality" min:0.0;
-	parameter "Cars" var: car_weight category: "modality" min:0.0;
-	
-	output {
-		
-		display "empty" {
-			
-		}
-
-	}
-
-}
+//experiment "Headless" type: gui {
+//	parameter "Step" var: step category: "Simulation step in second" min:1.0 ;
+//	parameter "Simulated_days" var: simulated_days category: "Simulation days" min:1.0 #days;
+//	parameter "Pedestrians" var: feet_weight category: "modality" min:0.0;
+//	parameter "Bikes" var: bike_weight category: "modality" min:0.0;
+//	parameter "Cars" var: car_weight category: "modality" min:0.0;
+//	
+//	output {
+//		
+//		display "empty" {
+//			
+//		}
+//
+//	}
+//
+//}

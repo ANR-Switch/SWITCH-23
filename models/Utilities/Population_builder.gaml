@@ -20,7 +20,7 @@ import "../Species/Person.gaml"
 
 
 species Population_builder schedules: [] {
-	string bdd <- "../../includes/DataSet/Switch_old.db";									//Path to the database
+	string bdd <- "../../includes/DataSet/Switch.db";									//Path to the database
 	map<string, string>  param <- ['dbtype'::'sqlite','database'::bdd];		//Setings of the database
 	
 	//useful param to pass for building population
