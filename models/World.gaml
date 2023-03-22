@@ -19,8 +19,9 @@ import "Species/Map/Building.gaml"
 import "Utilities/Population_builder.gaml"
 
 global {	
-	float step <- 1 #seconds parameter: "Step"; //86400 for a day
+	float step <- 360 #seconds parameter: "Step"; //86400 for a day
 	float simulated_days <- 1 #days parameter: "Simulated_days";
+	float experiment_init_time;
 	
 	//loading parameters
 	string dataset_path <- "../includes/Castanet-Tolosan/CASTANET-TOLOSAN/";
@@ -35,9 +36,13 @@ global {
 	date starting_date <- date([1970, 1, 1, 6, 0, 0]);
 	date sim_starting_date <- date([1970, 1, 1, 0, 0, 0]); //has to start at midnight! for activity.gaml init
 
+	//modality
 	float feet_weight <- 0.0 parameter: "Feet";
 	float bike_weight <- 0.0 parameter: "Bike";
-	float car_weight <- 0.7 parameter: "Car";
+	float car_weight <- 0.6 parameter: "Car";
+	//highlight path
+	int Person_idx <- 0 parameter: "Person_idx";
+	int Path_idx <- 0 parameter: "Path_idx";
 
 	int nb_event_managers <- 1;
 	
@@ -54,6 +59,8 @@ global {
 	list<Building> leasure_buildings;
 	list<Building> studying_buildings;
 	list<Building> commercial_buildings;
+	list<Building> administrative_buildings;
+	list<Building> exterior_working_buildings;
 	
 	init {
 		seed <- 42.0;
@@ -61,7 +68,10 @@ global {
 		date init_date <- (starting_date + (machine_time / 1000));
 
 		do normalize_modality();
+		
+		////Constants and Logger
 		create Constants; //constant file useful for other species
+		create Logger; //logger
 		
 		//init
 		do init_event_managers; //good to do first
@@ -140,9 +150,17 @@ global {
 					color <- #red;				
 					add self to: myself.commercial_buildings;
 				}
+				match 4 {
+					color <- #orange;				
+					add self to: myself.administrative_buildings;
+				}
 				match 5 {
 					color <- #green;				
 					add self to: myself.leasure_buildings;
+				}
+				match 6 {
+					color <- #purple;
+					add self to: myself.exterior_working_buildings; //exterior attraction zones
 				}
 				default {
 					color <- #yellow;
@@ -162,25 +180,8 @@ global {
 											id::int(read("id")),
 											allowed_vehicles::unknown(read("vehicles"))
 		]{
+			//
 		}
-		
-//		//doublement
-//		int nb_roads <- length(Road);
-//		loop r over: Road {
-//			if r.oneway != "F" {
-//				create Road {
-//					shape <- line(reverse(r.shape.points));
-//					id <- nb_roads + r.id;
-//					lanes <- r.lanes;
-//					max_speed <- r.max_speed;
-//					oneway <- r.oneway;
-//				}
-//			}
-//		}
-
-		//separation
-//		list<Road> car_roads <- Road collect each.car_auth;
-
 		write "There are " + length(Road) + " Roads loaded in " + (machine_time-t1)/1000.0 + " seconds.";
 	 }
 	 
@@ -219,8 +220,16 @@ global {
 	 	car_weight <- car_weight / sum ;
 	 }
 	 
-	 reflex stop when: after(starting_date + simulated_days#days) { //TODO marche pas
-	 	if current_date > starting_date {
+	 reflex { 
+		if cycle = 0 {
+			//start
+			experiment_init_time <- machine_time;
+		}
+	 	if Person count(each.day_done) = length(Person) {
+	 		ask Logger[0] {
+	 			do final_log;
+	 		}
+	 		write "\n The experiment lasted for: " + (machine_time - experiment_init_time)/1000.0 + " seconds.";
 	 		do pause;
 	 	}
 	 }
@@ -228,13 +237,33 @@ global {
 }
 
 
-experiment "test CT" type: gui {
+experiment "Display & Graphs" type: gui {
+	/*
+	 * Parameters
+	 */
 	parameter "Step" var: step category: "Simulation step in second" min:1.0 ;
 	parameter "Simulated_days" var: simulated_days category: "Simulation days" min:1.0 #days;
 	parameter "Pedestrians" var: feet_weight category: "modality" min:0.0;
 	parameter "Bikes" var: bike_weight category: "modality" min:0.0;
 	parameter "Cars" var: car_weight category: "modality" min:0.0;
 	
+	/*
+	 * Interactive commands
+	 */
+	parameter "Person to select" var: Person_idx category: "Highlight path" min:0 ;
+	parameter "Path to highlight" var: Path_idx category: "Highlight path" min:0;
+	user_command "Display parameter" category: "Highlight path" color:#red {
+		if Person_idx < length(Person) and Person_idx > -1 {
+			ask Person[Person_idx] {do highlight_path(Path_idx);}
+		}else{
+			write "Person_idx is out of range ! Try again." color:#red;
+		}
+		
+	}
+	
+	/*
+	 * Outputs
+	 */
 	output {
 		display main_window type: opengl {
 			species Road;
@@ -292,6 +321,58 @@ experiment "test CT" type: gui {
         	}
         }
 //		monitor "Time: " value: current_date;
+
+	}
+}
+
+experiment "Display only" type: gui {
+	/*
+	 * Parameters
+	 */
+	parameter "Step" var: step category: "Simulation step in second" min:1.0 ;
+	parameter "Simulated_days" var: simulated_days category: "Simulation days" min:1.0 #days;
+	parameter "Pedestrians" var: feet_weight category: "modality" min:0.0;
+	parameter "Bikes" var: bike_weight category: "modality" min:0.0;
+	parameter "Cars" var: car_weight category: "modality" min:0.0;
+	
+	/*
+	 * Interactive commands
+	 */
+	parameter "Person to select" var: Person_idx category: "Highlight path" min:0 ;
+	parameter "Path to highlight" var: Path_idx category: "Highlight path" min:0;
+	user_command "Display parameter" category: "Highlight path" color:#red {
+		if Person_idx < length(Person) and Person_idx > -1 {
+			ask Person[Person_idx] {do highlight_path(Path_idx);}
+		}else{
+			write "Person_idx is out of range ! Try again." color:#red;
+		}
+	}
+	
+	/*
+	 * Outputs
+	 */
+	output {
+		display main_window type: opengl {
+			species Road;
+			species Building;
+			species Person;
+			species Car;
+		}
+	}
+}
+
+experiment "Headless" type: gui {
+	parameter "Step" var: step category: "Simulation step in second" min:1.0 ;
+	parameter "Simulated_days" var: simulated_days category: "Simulation days" min:1.0 #days;
+	parameter "Pedestrians" var: feet_weight category: "modality" min:0.0;
+	parameter "Bikes" var: bike_weight category: "modality" min:0.0;
+	parameter "Cars" var: car_weight category: "modality" min:0.0;
+	
+	output {
+		
+		display "empty" {
+			
+		}
 
 	}
 

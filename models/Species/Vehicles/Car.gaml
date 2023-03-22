@@ -52,6 +52,7 @@ species Car parent: Vehicle schedules: [] {
 				write get_current_date() + ": " + name + " belonging to: " + owner.name +" is not able to find a path between " + owner.current_building + " and " + owner.next_building color: #red;
 				write "The motion will not be done. \n The activity: " + owner.current_activity.title + " of: " + owner.name + " might be done in the wrong location." color: #orange;
 				owner.location <- any_location_in(owner.current_activity.activity_location);
+				owner.skipped_travels <- owner.skipped_travels + 1;
 				ask owner {
 					do end_motion;
 				}
@@ -118,7 +119,7 @@ species Car parent: Vehicle schedules: [] {
 			write "Lateness is negative, this should not happen." color:#red;
 		}
 		
-		add past_roads to: owner.past_motions;
+		add past_roads to: owner.past_paths;
 		ask owner {
 			do walk_to(current_destination); //this may kill the vehicle so make sure this is our last action
 		}

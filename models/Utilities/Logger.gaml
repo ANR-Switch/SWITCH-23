@@ -8,6 +8,8 @@
 
 model Logger
 
+import "../Species/Person.gaml"
+
 /* observer */
 
 species Logger {
@@ -23,6 +25,9 @@ species Logger {
 		}
 	}
 	
+	action final_log {
+		write "\n " + Person count(each.is_going_in_ext_zone) + " persons went out of the simulated city to work.";
+	}
 	
 	reflex log {
 		do log_roads(road_b);

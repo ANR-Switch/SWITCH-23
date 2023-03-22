@@ -17,6 +17,7 @@ species Road skills: [scheduling] schedules: [] {
 	unknown allowed_vehicles;
 	point trans <- {2.0, 2.0};
 	geometry displayed_shape;
+	rgb color <- #black;
 	
 	//identifiers
 	bool car_track <- false;
@@ -44,6 +45,7 @@ species Road skills: [scheduling] schedules: [] {
 	
 	//output display
 	bool is_jammed <- false;
+	bool is_highlight <- false;
 
 	init {
 		point A <- first(shape.points);
@@ -190,6 +192,7 @@ species Road skills: [scheduling] schedules: [] {
 		loop e over: _queue {
 			if e.key = vehicle {
 				current_capacity <- current_capacity - vehicle.length;
+				color <- rgb(255 * (current_capacity / max_capacity), 0, 0);
 				last_exit <- get_current_date();
 				remove index: _idx from: _queue;
 				
@@ -221,6 +224,7 @@ species Road skills: [scheduling] schedules: [] {
 				do enter_road(myself);
 			}
 			current_capacity <- current_capacity + vehicle.length;
+			color <- rgb(255 * (current_capacity / max_capacity), 0, 0);
 			add pair(vehicle::leave_date) to: _queue;
 			last_entry <- get_current_date();
 			car_counter_ <- car_counter_ + 1;
@@ -307,13 +311,9 @@ species Road skills: [scheduling] schedules: [] {
 			public_transport_track <- true;
 		}
 	}
-	
-	action highlight {
-		draw displayed_shape color: #cyan; //TODO not working ?
-	}
 
 	aspect default {
-		draw displayed_shape color: rgb(255 * (current_capacity / max_capacity), 0, 0);
+		draw displayed_shape color: color;
 	}
 
 }

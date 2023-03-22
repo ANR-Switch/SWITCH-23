@@ -80,7 +80,7 @@ species Population_builder schedules: [] {
 				
 			////	
 			
-			loop i from: 0 to: 0 {
+			loop i from: 0 to: 1 {
 			create Person from: (self.select(params: myself.param,	//create all the individu
 				select: "SELECT * FROM individu"))
 				with:[first_name::"nom",age::"age",genre::"genre",professional_activity::"activite_pro",income::"revenu",study_level::"etudes"];
@@ -132,6 +132,7 @@ species Population_builder schedules: [] {
 				location <- any_location_in(living_building);
 				current_building <- living_building;
 				working_building <- select_building(working_buildings);
+				exterior_working_building <- select_building(exterior_working_buildings);
 				studying_building <- select_building(studying_buildings);
 				commercial_building <- select_building(commercial_buildings);
 				leasure_building <- select_building(leasure_buildings);

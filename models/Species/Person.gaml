@@ -30,19 +30,23 @@ species Person skills: [scheduling] schedules: [] {
 	int study_level;
 	list<int> profile;
 	Agenda personal_agenda;
+	
 	Building current_building;
 	Building next_building;
 	Building living_building;
 	Building working_building;
+	Building exterior_working_building;
 	Building commercial_building;
 	Building studying_building;
 	Building leasure_building;
+	bool is_going_in_ext_zone <- false;
 	
 	//
 	int act_idx <- 0; 
 	Activity current_activity;
 	
 	//
+	bool day_done <- false;
 	point current_destination; 
 	date start_motion_date;
 	float total_travel_time <- 0.0;
@@ -54,10 +58,11 @@ species Person skills: [scheduling] schedules: [] {
 	rgb color <- #black;
 	Vehicle current_vehicle;
 	list<Vehicle> vehicles <- [];
+	int skipped_travels <- 0;
 	
 	//output display
 	bool is_moving_chart <- false; //used for display
-	list<list<Road>> past_motions;
+	list<list<Road>> past_paths;
 	
 //	init {
 //
@@ -89,6 +94,7 @@ species Person skills: [scheduling] schedules: [] {
     		date d <- current_activity.starting_date add_minutes rnd(-floor(Constants[0].starting_time_randomiser/2), floor(Constants[0].starting_time_randomiser/2));
     	  	do later the_action: "start_activity" at: d ;
     	}else{
+    		day_done <- true;
     		write get_current_date() + ": " + name + " will do nothing today.";
     	}
     }
@@ -104,8 +110,15 @@ species Person skills: [scheduling] schedules: [] {
 				next_building <- living_building;
 			}
 			match 1 {
-				current_destination <- any_location_in(working_building);
-				next_building <- working_building;
+				if flip(Constants[0].ratio_exterior_workers) and (species(current_vehicle) = Car){
+					current_destination <- any_location_in(exterior_working_building);
+					next_building <- exterior_working_building;
+					is_going_in_ext_zone <- true;
+				}else{
+					current_destination <- any_location_in(working_building);
+					next_building <- working_building;
+				}
+				
 			}
 			match 2 {
 				current_destination <- any_location_in(studying_building);
@@ -162,6 +175,7 @@ species Person skills: [scheduling] schedules: [] {
     			do later the_action: "start_activity" at: get_current_date() add_seconds 1;
     		}
     	}else{
+    		day_done <- true;
     		write get_current_date() + ": " + name + " ended its day."; 
     	}
     }
@@ -284,17 +298,28 @@ species Person skills: [scheduling] schedules: [] {
     	}
     }
    
-   action highlight_motion(int i){
-   		if length(past_motions) > i {
-   			loop r over: past_motions[i] {
+   action highlight_path(int i){
+   		if length(past_paths) > i {
+   			write get_current_date() + ": " + name + " highlight its motion: " + i;
+   			loop r over: past_paths[i] {
    				ask r {
-   					do highlight;
+   					color <- #red;
    				}
    			}
+//   			do later the_action: "cancel_highlight" with_arguments:map("i"::i) at: get_current_date() add_seconds 1;
    		}else{
-   			write "Cannot highlight the motion as " + name + " only registered " + length(past_motions) + " motions.";
+   			write name + " cannot highlight the motion because it has only registered " + length(past_paths) + " motions yet." color: #red;
    		}
    }
+   
+   //To add later
+//   action cancel_highlight(int i){
+//   		loop r over: past_paths[i] {
+//			ask r {
+//				color <- rgb(255 * (current_capacity / max_capacity), 0, 0);
+//			}
+//		}
+//   }
     
     aspect default {
     	draw circle(10) color: color border: #black;
