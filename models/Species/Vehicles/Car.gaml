@@ -28,7 +28,7 @@ species Car parent: Vehicle schedules: [] {
 		speed <- _speed;
 		seats <- _seats;
 		add self to: owner.vehicles;
-		owner.current_vehicle <- self;		
+//		owner.current_vehicle <- self;		
 		
 		//set location
 //		location <- _owner.location; //simple way
@@ -36,6 +36,10 @@ species Car parent: Vehicle schedules: [] {
 		Road closest_road <- car_road_subset closest_to(owner.location);
 		list<point> l <- closest_road.displayed_shape closest_points_with (owner.location); 
 		location <- l[0];
+	}
+	
+	path compute_path_between(point p1, point p2) {
+		return path_between(car_road_graph, p1, p2);
 	}
 	
 	action goto(point dest){
@@ -46,7 +50,7 @@ species Car parent: Vehicle schedules: [] {
 			owner.location <- location;
 			my_destination <- dest;
 //			float t1 <- machine_time;
-			my_path <- path_between(car_road_graph, location, my_destination);
+			my_path <- compute_path_between(location, my_destination);
 //			write "time : >>> " + (machine_time - t1) + " milliseconds" color: #green;
 			if my_path = nil {
 				write get_current_date() + ": " + name + " belonging to: " + owner.name +" is not able to find a path between " + owner.current_building + " and " + owner.next_building color: #red;
@@ -84,21 +88,17 @@ species Car parent: Vehicle schedules: [] {
 	action enter_road(Road road){
 		color <- driving_color;
 		current_road <- road;
-		location <- road.location;
-		loop p over: passengers {
-			p.location <- location;
-			p.color <- color;
-		} 
+		do move_to(road.location);
+		
 		add Road(my_path.edges[0]) to: past_roads;
 		remove index: 0 from: my_path.edges;
 	}
 	
-	action arrive_at_destination {
-		color <- parking_color;
+	action arrive_at_destination {		
 		//delete from previous road
 		if current_road != nil {
 			list<point> p <- current_road.displayed_shape closest_points_with(owner.current_destination);
-			location <- p[0];
+			do move_to(p[0]);
 			ask current_road {
 				bool found <- remove(myself);	
 				assert found warning: true;
@@ -106,6 +106,7 @@ species Car parent: Vehicle schedules: [] {
 		}else{
 			write get_current_date() + ": Something is wrong with " + name + "\n Belonging to " + owner.name color:#orange;
 		}
+		color <- parking_color;
 		current_road <- nil;
 //		owner.location <- my_destination;
 		

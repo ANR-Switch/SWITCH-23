@@ -37,9 +37,9 @@ global {
 	date sim_starting_date <- date([1970, 1, 1, 0, 0, 0]); //has to start at midnight! for activity.gaml init
 
 	//modality
-	float feet_weight <- 0.2 parameter: "Feet";
-	float bike_weight <- 0.2 parameter: "Bike";
-	float car_weight <- 0.6 parameter: "Car";
+	float feet_weight <- 0.1 parameter: "Feet";
+	float bike_weight <- 0.1 parameter: "Bike";
+	float car_weight <- 0.8 parameter: "Car";
 	//highlight path
 	int Person_idx <- 0 parameter: "Person_idx";
 	int Path_idx <- 0 parameter: "Path_idx";

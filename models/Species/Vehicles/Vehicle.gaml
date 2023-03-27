@@ -37,6 +37,7 @@ species Vehicle virtual: true schedules: [] {
 	action goto(point dest) virtual: true;
 	action enter_road(Road road) virtual: true;
 	action arrive_at_destination virtual: true;
+	path compute_path_between(point p1, point p2) virtual: true;
 	
 	//same for everyone
 	date get_current_date{
@@ -61,6 +62,14 @@ species Vehicle virtual: true schedules: [] {
 		}else{
 			write get_current_date() + ": " + name + " tries to remove: "+ p.name + " but it is not here." color:#red;
 		}
+	}
+	
+	action move_to(point loc){
+		location <- loc;
+		loop p over: passengers {
+			p.location <- location;
+			p.color <- color;
+		} 
 	}
 }
 

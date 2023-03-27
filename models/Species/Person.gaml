@@ -146,6 +146,11 @@ species Person skills: [scheduling] schedules: [] {
 		}
     	
 		if location != current_destination {
+			Vehicle old_one <- current_vehicle;
+			do choose_current_vehicle;
+			if old_one != nil and old_one != current_vehicle {
+				write "!!! -> " + name + " changed its mode !!! \n Now using " + current_vehicle.name + " instead of " + old_one.name color:#purple;
+			}
 			if species(current_vehicle) = Car {
 				do walk_to(current_vehicle.location);
 			}else{
@@ -273,7 +278,66 @@ species Person skills: [scheduling] schedules: [] {
     	}    	
     }
     
-    action choose_vehicle {
+    action choose_current_vehicle {
+    	bool fct_on <- false;
+    	if fct_on {
+	    	path planned_path;
+	    	float planned_travel_duration;
+	    	
+	    	loop v over: vehicles {
+	    		switch species(v) {
+	    			match Car {
+	    				current_vehicle <- v;
+	    				return;
+	    			}
+	    			match Bike {
+	    				ask v {
+	    					planned_path <- compute_path_between(v.location, myself.current_destination);
+	    				}
+	    				if planned_path != nil {
+	    					float t;
+	    					loop r over: planned_path.edges {
+	    						ask Road(r) {
+	    							t <- get_theoretical_travel_time(v);
+	    						}
+	    						planned_travel_duration <- planned_travel_duration + t;
+	    					}
+	    					if planned_travel_duration < 30*60 {
+	    						current_vehicle <- v;
+	    						return;
+	    					}  
+	    				}
+	    			}
+	    			match Feet {
+	    				ask v {
+	    					planned_path <- compute_path_between(v.location, myself.current_destination);
+	    				}
+	    				if planned_path != nil {
+	    					float t;
+	    					loop r over: planned_path.edges {
+	    						ask Road(r) {
+	    							t <- get_theoretical_travel_time(v);
+	    						}
+	    						planned_travel_duration <- planned_travel_duration + t;
+	    					}
+	    					if planned_travel_duration < 30*60 {
+	    						current_vehicle <- v;
+	    						return;
+	    					}  
+	    				}
+	    			}
+	    		}
+	    	}
+	    	//if we are here it means no vehicles is find, so lets take the first one; our prefered one.
+	    	current_vehicle <- vehicles[0];
+	    	write get_current_date() + ": " + name + " is not super satisfied with its vehicle for the path it has to do but it will use: " + current_vehicle.name + " anyway.";
+		}else{
+			current_vehicle <- vehicles[0];
+		}
+    }
+    
+    action choose_vehicles {
+    	//this method is called at initialisation in order to select the persons' vehicles in a preference order
     	int choice <- rnd_choice([feet_weight, bike_weight, car_weight]);
     	switch int(choice) {
     		match 0 {
@@ -281,17 +345,58 @@ species Person skills: [scheduling] schedules: [] {
 	    	  	ask f {
 	    	  		do init_vehicle(myself);
 	    	  	}
+	    	  	if flip(0.5) {
+	    	  		create Car returns: c;
+		    	  	ask c {
+		    	  		do init_vehicle(myself);
+		    	  	}
+	    	  	}else{
+	    	  		create Bike returns: b;
+		    	  	ask b {
+		    	  		do init_vehicle(myself);
+		    	  	}
+	    	  	}	    	  	
     		}
     		match 1 {
     			create Bike returns: b;
 	    	  	ask b {
 	    	  		do init_vehicle(myself);
 	    	  	}
+	    	  	if flip(0.5) {
+	    	  		create Car returns: c;
+		    	  	ask c {
+		    	  		do init_vehicle(myself);
+		    	  	}
+		    	  	create Feet returns: f;
+		    	  	ask f {
+		    	  		do init_vehicle(myself);
+		    	  	}
+	    	  	}else{
+	    	  		create Feet returns: f;
+		    	  	ask f {
+		    	  		do init_vehicle(myself);
+		    	  	}
+	    	  	}
     		}
     		match 2 {
     			create Car returns: c;
 	    	  	ask c {
 	    	  		do init_vehicle(myself);
+	    	  	}
+	    	  	if flip(0.5) {
+	    	  		create Feet returns: f;
+		    	  	ask f {
+		    	  		do init_vehicle(myself);
+		    	  	}
+	    	  	}else{
+	    	  		create Bike returns: b;
+		    	  	ask b {
+		    	  		do init_vehicle(myself);
+		    	  	}
+		    	  	create Feet returns: f;
+		    	  	ask f {
+		    	  		do init_vehicle(myself);
+		    	  	}
 	    	  	}
     		}
     		default {
