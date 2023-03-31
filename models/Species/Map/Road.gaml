@@ -33,7 +33,7 @@ species Road skills: [scheduling] schedules: [] {
 	date last_entry;
 	date last_exit;
 	float inflow_delay <- 1.0 const: true;
-	float outflow_delay <- 1.0 const: true;
+	float outflow_delay <- 4.0 const: true;
 	float gap_travel_time <- shape.perimeter / 2; 
 	int deadlock_patience <- Constants[0].deadlock_patience; //minutes to try to force the car inside the road
 	list<pair<Vehicle, date>> _queue; //queue is a build-in name so we use _queue

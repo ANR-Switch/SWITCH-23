@@ -24,6 +24,10 @@ species Vehicle virtual: true schedules: [] {
 	point my_destination;
 	path my_path;
 	Road current_road <- nil;
+	
+	//
+	date log_entry_date;	
+	//
 	list<Road> past_roads;
 	//other attributes less important
 	date theoretical_arrival_date;
@@ -70,6 +74,13 @@ species Vehicle virtual: true schedules: [] {
 			p.location <- location;
 			p.color <- color;
 		} 
+	}
+	
+	action log (int _lateness){
+		date leaving_date <- get_current_date();
+		ask owner.journal {
+			do write_in_journal(myself.owner.act_idx, myself.name, myself.current_road, myself.log_entry_date, leaving_date, _lateness);
+		}
 	}
 }
 

@@ -8,6 +8,8 @@
 
 model Person
 
+import "../Logs/Journal.gaml"
+
 import "../Utilities/Constants.gaml"
 
 import "Vehicles/Feet.gaml"
@@ -39,14 +41,15 @@ species Person skills: [scheduling] schedules: [] {
 	Building commercial_building;
 	Building studying_building;
 	Building leasure_building;
-	bool is_going_in_ext_zone <- false;
+	bool is_going_in_ext_zone <- false; //used for display
 	
 	//
 	int act_idx <- 0; 
 	Activity current_activity;
 	
 	//
-	bool day_done <- false;
+	Journal journal;
+	bool day_done <- false; 
 	point current_destination; 
 	date start_motion_date;
 	float total_travel_time <- 0.0;
@@ -65,9 +68,12 @@ species Person skills: [scheduling] schedules: [] {
 	bool is_moving_chart <- false; //used for display
 	list<list<Road>> past_paths;
 	
-//	init {
-//
-//	}
+	init {
+		create Journal returns: j {
+			owner <- myself;
+		}
+		journal <- j[0];
+	}
 
 	
 	Building select_building (list<Building> l){
@@ -100,6 +106,9 @@ species Person skills: [scheduling] schedules: [] {
     	}
     }
     
+    action time_for_a_new_activity(Activity activity){
+    	
+    }
     
     
     action start_activity {    	

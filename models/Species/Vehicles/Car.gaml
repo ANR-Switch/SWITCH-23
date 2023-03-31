@@ -66,8 +66,9 @@ species Car parent: Vehicle schedules: [] {
 					//compute theoretical arrival date for comparaison at the end of the simulated day
 					theoretical_arrival_date <- get_current_date() add_seconds compute_theoretical_time();
 					owner.theoretical_travel_duration <- compute_theoretical_time();
-//					write "Trip should last " + compute_theoretical_time() color:#purple;
+					
 					do propose;
+			
 				}else{
 					write get_current_date() + ": " + owner.name + " called goto on " + name + " but the path computed is null.";
 				}	
@@ -86,17 +87,39 @@ species Car parent: Vehicle schedules: [] {
 	}
 	
 	action enter_road(Road road){
+		//log
+		if current_road != nil {
+			//here we register previous road info in the log
+			float t;
+			ask current_road {
+				t <- get_theoretical_travel_time(myself);
+			}
+			int road_lateness <- int((get_current_date() - log_entry_date) - t);
+			do log(road_lateness);
+		}
+		log_entry_date <- get_current_date();
+		//
+		
 		color <- driving_color;
 		current_road <- road;
 		do move_to(road.location);
-		
-		add Road(my_path.edges[0]) to: past_roads;
+			
+		add Road(my_path.edges[0]) to: past_roads; //to remove
 		remove index: 0 from: my_path.edges;
 	}
 	
 	action arrive_at_destination {		
 		//delete from previous road
 		if current_road != nil {
+			//log
+			float t;
+			ask current_road {
+				t <- get_theoretical_travel_time(myself);
+			}
+			int road_lateness <- int((get_current_date() - log_entry_date) - t);
+			do log(road_lateness);
+			//
+			
 			list<point> p <- current_road.displayed_shape closest_points_with(owner.current_destination);
 			do move_to(p[0]);
 			ask current_road {

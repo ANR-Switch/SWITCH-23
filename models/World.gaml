@@ -10,7 +10,7 @@ import "Utilities/Constants.gaml"
 
 import "Utilities/EventManager.gaml"
 
-import "Utilities/Logger.gaml"
+import "Logs/Logger.gaml"
 
 import "Species/Map/Road.gaml"
 
@@ -167,14 +167,14 @@ global {
 				}	
 			}
 		}
-		write "There are " + length(Building) + " Buildings loaded in " + (machine_time-t1)/1000.0 + " seconds. \n Among which :";
-		write " " + length(living_buildings) + " are living buildings,";
-		write " " + length(working_buildings) + " are working buildings,";
-		write " " + length(studying_buildings) + " are studying buildings,";
-		write " " + length(commercial_buildings) + " are commercial buildings,";
-		write " " + length(administrative_buildings) + " are administrative buildings,";
-		write " " + length(leasure_buildings) + " are leasure buildings,";
-		write " " + length(exterior_working_buildings) + " are exterior_working zones.";
+		write "There are " + length(Building) + " Buildings loaded in " + (machine_time-t1)/1000.0 + " seconds.";
+		write "Living buildings: " + length(living_buildings) ;
+		write "Working buildings: " + length(working_buildings) ;
+		write "Studying buildings: " + length(studying_buildings) ;
+		write "Commercial buildings: " + length(commercial_buildings) ;
+		write "Administrative buildings: " + length(administrative_buildings) ;
+		write "Leasure buildings: " + length(leasure_buildings) ;
+		write "Exterior working buildings: " + length(exterior_working_buildings) ;
 		
 	 }
 	 
@@ -196,7 +196,6 @@ global {
 	 action init_graphs {
 	 	write "Graphs...";
 	 	float t1 <- machine_time;
-	 	//TODO
 	 	list<Road> road_subset;
 	 	map<Road, float> road_weights_map;
 	 	
@@ -237,7 +236,7 @@ global {
 	 		ask Logger[0] {
 	 			do final_log;
 	 		}
-	 		write "\n The experiment lasted for: " + (machine_time - experiment_init_time)/1000.0 + " seconds.";
+	 		write "\n The experiment took: " + (machine_time - experiment_init_time)/1000.0 + " seconds.";
 	 		do pause;
 	 	}
 	 }
@@ -282,13 +281,13 @@ experiment "Display & Graphs" type: gui {
 		
 		display "chart_display" {
 	        chart "Mean per-travel-lateness" type: histogram {
-	        	datalist  (distribution_of(Person collect (each.total_lateness/(length(each.personal_agenda.activities))),6,0, Person max_of(each.total_lateness/(length(each.personal_agenda.activities)))) at "legend") 
-	            value:(distribution_of(Person collect (each.total_lateness/(length(each.personal_agenda.activities))),6,0,Person max_of(each.total_lateness/(length(each.personal_agenda.activities)))) at "values");      
+	        	datalist  (distribution_of(Person collect (each.total_lateness/(length(each.personal_agenda.activities))),4,0, Person max_of(each.total_lateness/(length(each.personal_agenda.activities)))) at "legend") 
+	            value:(distribution_of(Person collect (each.total_lateness/(length(each.personal_agenda.activities))),4,0,Person max_of(each.total_lateness/(length(each.personal_agenda.activities)))) at "values");      
 	        } 
         }
         
         display "Persons moving" {
-        	chart "Moving persons" type: series {
+        	chart "Moving persons" x_tick_unit: 60 x_serie_labels: (""+current_date.hour+"h"+current_date.minute) type: series {
         		data "Persons moving" value: Person count(each.is_moving_chart = true) color:#black;
         	}
         } 
@@ -315,7 +314,7 @@ experiment "Display & Graphs" type: gui {
         }
         
         display "road" {
-        	chart "Jammed roads" type: series {
+        	chart "Jammed roads" x_tick_unit: 60 x_serie_labels: (""+current_date.hour+"h"+current_date.minute) type: series {
         		data "Jammed roads" value: Road count(each.is_jammed = true) color: #black;
         	}
         }
@@ -323,7 +322,7 @@ experiment "Display & Graphs" type: gui {
         display "Road capacity" {
         	chart "Road capacity distribution" type: histogram {
         		data "]0;0.33]" value: Road count (each.current_capacity/each.max_capacity <= 0.33) color: #green ;
-    			data "]0.33;0.66]" value: Road count ((each.current_capacity/each.max_capacity > 0.33) and (each.current_capacity/each.max_capacity <= 0.66)) color: #yellow ;
+    			data "]0.33;0.66]" value: Road count ((each.current_capacity/each.max_capacity > 0.33) and (each.current_capacity/each.max_capacity <= 0.66)) color: #orange ;
     			data "]0.67;1]" value: Road count ((each.current_capacity/each.max_capacity > 0.66) and (each.current_capacity/each.max_capacity <= 1.0)) color: #red ;
     			data "]1;*]" value: Road count (each.current_capacity/each.max_capacity > 1.0) color: #darkred;
         	}

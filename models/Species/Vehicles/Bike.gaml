@@ -78,6 +78,19 @@ species Bike parent: Vehicle schedules: [] {
 	}
 	
 	action enter_road(Road road){
+		//log
+		if current_road != nil {
+			//here we register previous road info in the log
+			float t;
+			ask current_road {
+				t <- get_theoretical_travel_time(myself);
+			}
+			int road_lateness <- int((get_current_date() - log_entry_date) - t);
+			do log(road_lateness);
+		}
+		log_entry_date <- get_current_date();
+		//
+		
 		current_road <- road;
 		do move_to(road.location);
 		add Road(my_path.edges[0]) to: past_roads;
@@ -86,7 +99,16 @@ species Bike parent: Vehicle schedules: [] {
 	
 	action arrive_at_destination {
 		//delete from previous road
-		if current_road != nil {
+		if current_road != nil {			
+			//log
+			float t;
+			ask current_road {
+				t <- get_theoretical_travel_time(myself);
+			}
+			int road_lateness <- int((get_current_date() - log_entry_date) - t);
+			do log(road_lateness);
+			//
+			
 			ask current_road {
 				bool found <- remove(myself);	
 				assert found warning: true;
