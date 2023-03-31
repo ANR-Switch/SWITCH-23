@@ -35,7 +35,6 @@ species Feet parent: Vehicle schedules: [] {
 	}
 	
 	action goto(point dest){
-		past_roads <- [];
 		if !empty(passengers) {
 			//init
 			current_road <- nil;
@@ -48,17 +47,11 @@ species Feet parent: Vehicle schedules: [] {
 				write get_current_date() + ": " + name + " belonging to: " + owner.name +" is not able to find a path between " + owner.current_building + " and " + owner.next_building color: #red;
 				write "The motion will not be done. \n The activity: " + owner.current_activity.title + " of: " + owner.name + " might be done in the wrong location." color: #orange;
 				owner.location <- any_location_in(owner.current_activity.activity_location);
-				owner.skipped_travels <- owner.skipped_travels + 1;
-				add [] to: owner.past_paths;
 				ask owner {
 					do end_motion;
 				}
 			}else{
 				if !empty(my_path.edges) {
-					//compute theoretical arrival date for comparaison at the end of the simulated day
-					theoretical_arrival_date <- get_current_date() add_seconds compute_theoretical_time();
-					owner.theoretical_travel_duration <- compute_theoretical_time();
-//					write "Trip should last " + compute_theoretical_time() color:#purple;
 					do propose;
 				}else{
 					write get_current_date() + ": " + owner.name + " called goto on " + name + " but the path computed is null.";
@@ -93,7 +86,6 @@ species Feet parent: Vehicle schedules: [] {
 		
 		current_road <- road;
 		do move_to(road.location);
-		add Road(my_path.edges[0]) to: past_roads;
 		remove index: 0 from: my_path.edges;
 	}
 	
@@ -119,31 +111,19 @@ species Feet parent: Vehicle schedules: [] {
 		current_road <- nil;
 		owner.location <- my_destination;
 		
-		//compute lateness for chart display
-		float _lateness <- (get_current_date() - theoretical_arrival_date);
-		assert _lateness >= 0;
-		if _lateness > 0 {
-			owner.lateness <- _lateness;
-		}else if _lateness = 0 {
-			owner.lateness <- 0.0;
-		}else{
-			write "Lateness is negative, this should not happen." color:#red;
-		}
-		
-		add past_roads to: owner.past_paths;
 		ask owner {
 			do end_motion; //this may kill the vehicle so make sure this is our last action
 		}
 	}
 	
-	float compute_theoretical_time {
-		float t;
-		loop r over: my_path.edges {
-			ask Road(r) {
-				t <- t + get_theoretical_travel_time(myself);
-			}
-		}
-		return t;
-	} 
+//	float compute_theoretical_time {
+//		float t;
+//		loop r over: my_path.edges {
+//			ask Road(r) {
+//				t <- t + get_theoretical_travel_time(myself);
+//			}
+//		}
+//		return t;
+//	} 
 }
 

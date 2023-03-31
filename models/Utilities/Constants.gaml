@@ -16,6 +16,8 @@ species Constants {
 	float ratio_exterior_workers <- 0.85 const: true; //[0;1]
 	
 	//road
+	float inflow_delay <- 2.0 const: true;
+	float outflow_delay <- 3.0 const: true;
 	int deadlock_patience <- 5 const:true; //minutes
 }
 

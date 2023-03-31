@@ -51,22 +51,13 @@ species Person skills: [scheduling] schedules: [] {
 	Journal journal;
 	bool day_done <- false; 
 	point current_destination; 
-	date start_motion_date;
-	float total_travel_time <- 0.0;
-	float total_distance_travelled <- 0.0;
-	float lateness <- 0.0;
-	float total_lateness <- 0.0;
-	float lateness_tolerance <- Constants[0].lateness_tolerance const: true; //seconds
-	float theoretical_travel_duration;
 	float walking_speed <- 1.39 ; //#meter / #second ;
 	rgb color <- #black;
 	Vehicle current_vehicle;
 	list<Vehicle> vehicles <- [];
-	int skipped_travels <- 0;
 	
 	//output display
 	bool is_moving_chart <- false; //used for display
-	list<list<Road>> past_paths;
 	
 	init {
 		create Journal returns: j {
@@ -174,7 +165,7 @@ species Person skills: [scheduling] schedules: [] {
     }
     
     action end_activity {
-    	write get_current_date() + ": " + name + " ends " + current_activity.title;
+//    	write get_current_date() + ": " + name + " ends " + current_activity.title;
     	color <- #black;
     	
     	if act_idx < length(personal_agenda.activities) - 1 {
@@ -191,15 +182,13 @@ species Person skills: [scheduling] schedules: [] {
     		}
     	}else{
     		day_done <- true;
-    		do compute_total_distance_travelled;
-    		write get_current_date() + ": " + name + " ended its day."; 
+//    		write get_current_date() + ": " + name + " ended its day."; 
     	}
     }
     
     
     action start_motion{
-    	write get_current_date() + ": " + name + " takes vehicle: " + current_vehicle.name + " to do: " + current_activity.title;
-    	start_motion_date <- get_current_date();
+//    	write get_current_date() + ": " + name + " takes vehicle: " + current_vehicle.name + " to do: " + current_activity.title;
     	is_moving_chart <- true;
     	ask current_vehicle{
     		do add_passenger(myself);
@@ -212,18 +201,22 @@ species Person skills: [scheduling] schedules: [] {
     	current_building <- next_building;
     	color <- current_building.color;
     	is_moving_chart <- false;
-    	
-    	total_travel_time <- total_travel_time + (get_current_date() - start_motion_date);
-    	
+    	    	
     	ask current_vehicle{
     		do remove_passenger(myself);
     	}
-    	write get_current_date() + ": " + name + " starts doing: " + current_activity.title;
+//    	write get_current_date() + ": " + name + " starts doing: " + current_activity.title;
     	
+    	//TODO
+    	float lateness <- 0.0;
+    	loop t over: journal.event_log {
+    		if t.trip_idx = act_idx {
+    			lateness <- lateness + t.lateness;
+    		}
+    	}
     	if act_idx < length(personal_agenda.activities) - 1 {
-    		if lateness > lateness_tolerance {
-    			total_lateness <- total_lateness + lateness;
-    			write get_current_date() + name + " took " + lateness + " seconds more than planned to do its trip." color: #purple;    			
+    		if lateness > Constants[0].lateness_tolerance {
+    			write get_current_date()+ ": "+ name + " took " + lateness + " seconds more than planned to do its trip." color: #purple;    			
     			
     			if current_activity.priority_level <= personal_agenda.activities[act_idx+1].priority_level {
     				//we prefer to do the current activity (priority lvl in reverse order)
@@ -414,30 +407,22 @@ species Person skills: [scheduling] schedules: [] {
     	}
     }
     
-    action compute_total_distance_travelled {
-    	loop p over: past_paths {
-    		loop r over: p {
-    			total_distance_travelled <- total_distance_travelled + r.shape.perimeter;
-    		}
-    	}
-    }
+
    
    action highlight_path(int i){
-   		if length(past_paths) > i {
-   			if !empty(past_paths[i]){
-	   			write get_current_date() + ": " + name + " highlight its motion: " + i;
-	   			loop r over: past_paths[i] {
-	   				ask r {
-	   					color <- #red;
-	   				}
-	   			}
-	//   			do later the_action: "cancel_highlight" with_arguments:map("i"::i) at: get_current_date() add_seconds 1;
-			}else{
-				write "This motion did not occur for some reason. Probably because the vehicle was not able to find a path.";
-			}
-   		}else{
-   			write name + " cannot highlight the motion because it has only registered " + length(past_paths) + " motions yet." color: #red;
+   	//TODO
+   	bool found <- false;
+   	loop t over: journal.event_log {
+   		if t.trip_idx = i {
+   			found <- true;
+   			ask t.road {
+   				color <- #red;
+   			}
    		}
+   	}
+   	if !found {
+   		write "Cannot find a matching path to highlight." color:#red;
+   	}
    }
    
    //To add later

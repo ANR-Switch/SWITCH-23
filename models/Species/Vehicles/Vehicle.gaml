@@ -24,19 +24,12 @@ species Vehicle virtual: true schedules: [] {
 	point my_destination;
 	path my_path;
 	Road current_road <- nil;
-	
-	//
 	date log_entry_date;	
 	//
-	list<Road> past_roads;
-	//other attributes less important
-	date theoretical_arrival_date;
-	
+		
 	//for traffic conditions used by the road agents (default values are for a car)
-//	bool has_width <- true; //overtakable ? meaning it has to wait to be first in queue to go out 
 	float traffic_influence <- 1.0; //strength of our influence on the traffic, should be 1 for cars bus and trucks, and less for bikes
-	bool subject_to_flow <- true;
-	
+		
 	action init_vehicle(Person _owner, float _length<-2.0, float _speed<-30#km/#h, int _seats<-1) virtual: true;
 	action goto(point dest) virtual: true;
 	action enter_road(Road road) virtual: true;

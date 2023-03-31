@@ -37,9 +37,9 @@ global {
 	date sim_starting_date <- date([1970, 1, 1, 0, 0, 0]); //has to start at midnight! for activity.gaml init
 
 	//modality
-	float feet_weight <- 0.1 parameter: "Feet";
-	float bike_weight <- 0.1 parameter: "Bike";
-	float car_weight <- 0.8 parameter: "Car";
+	float feet_weight <- 0.2 parameter: "Feet";
+	float bike_weight <- 0.2 parameter: "Bike";
+	float car_weight <- 0.6 parameter: "Car";
 	//highlight path
 	int Person_idx <- 0 parameter: "Person_idx";
 	int Path_idx <- 0 parameter: "Path_idx";
@@ -47,12 +47,8 @@ global {
 	int nb_event_managers <- 1;
 	
 	graph car_road_graph;
-//	map<Road, float> car_road_weights_map;
 	graph feet_road_graph;
-//	map<Road, float> feet_road_weights_map;
 	graph bike_road_graph;
-//	map<Road, float> bike_road_weights_map;
-	//graph others;
 	 
 	list<Building> working_buildings;
 	list<Building> living_buildings;
@@ -279,15 +275,15 @@ experiment "Display & Graphs" type: gui {
 			species Car;
 		}
 		
-		display "chart_display" {
-	        chart "Mean per-travel-lateness" type: histogram {
-	        	datalist  (distribution_of(Person collect (each.total_lateness/(length(each.personal_agenda.activities))),4,0, Person max_of(each.total_lateness/(length(each.personal_agenda.activities)))) at "legend") 
-	            value:(distribution_of(Person collect (each.total_lateness/(length(each.personal_agenda.activities))),4,0,Person max_of(each.total_lateness/(length(each.personal_agenda.activities)))) at "values");      
-	        } 
-        }
+//		display "chart_display" {
+//	        chart "Mean per-travel-lateness" type: histogram {
+//	        	datalist  (distribution_of(Person collect (each.total_lateness/(length(each.personal_agenda.activities))),4,0, Person max_of(each.total_lateness/(length(each.personal_agenda.activities)))) at "legend") 
+//	            value:(distribution_of(Person collect (each.total_lateness/(length(each.personal_agenda.activities))),4,0,Person max_of(each.total_lateness/(length(each.personal_agenda.activities)))) at "values");      
+//	        } 
+//        }
         
         display "Persons moving" {
-        	chart "Moving persons" x_tick_unit: 60 x_serie_labels: (""+current_date.hour+"h"+current_date.minute) type: series {
+        	chart "Moving persons" x_tick_unit: 10 x_serie_labels: (""+current_date.hour+"h"+current_date.minute) type: series {
         		data "Persons moving" value: Person count(each.is_moving_chart = true) color:#black;
         	}
         } 
@@ -314,7 +310,7 @@ experiment "Display & Graphs" type: gui {
         }
         
         display "road" {
-        	chart "Jammed roads" x_tick_unit: 60 x_serie_labels: (""+current_date.hour+"h"+current_date.minute) type: series {
+        	chart "Jammed roads" x_tick_unit: 10 x_serie_labels: (""+current_date.hour+"h"+current_date.minute) type: series {
         		data "Jammed roads" value: Road count(each.is_jammed = true) color: #black;
         	}
         }

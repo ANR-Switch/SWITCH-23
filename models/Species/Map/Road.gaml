@@ -32,8 +32,8 @@ species Road skills: [scheduling] schedules: [] {
 	float beta <- 4.0 const: true;
 	date last_entry;
 	date last_exit;
-	float inflow_delay <- 1.0 const: true;
-	float outflow_delay <- 4.0 const: true;
+	float inflow_delay <- Constants[0].inflow_delay;
+	float outflow_delay <- Constants[0].outflow_delay;
 	float gap_travel_time <- shape.perimeter / 2; 
 	int deadlock_patience <- Constants[0].deadlock_patience; //minutes to try to force the car inside the road
 	list<pair<Vehicle, date>> _queue; //queue is a build-in name so we use _queue
@@ -108,7 +108,6 @@ species Road skills: [scheduling] schedules: [] {
 						float t <- t_min * ( 1 + alpha * capacity_ratio ^ beta );
 						leave_date <- get_current_date() add_seconds t;
 						//case: we do not schedule a leaving time yet
-	//					write get_current_date() + ": entered but its not first in queue on " + name;
 						do add(vehicle, leave_date);
 					}else{
 						//case: there are some vehicle in front of us but we can overtake them (they are pedestrians or cyclists)
@@ -146,6 +145,7 @@ species Road skills: [scheduling] schedules: [] {
 		}else{			
 			add vehicle to: waiting_list;
 			vehicle.owner.color <- #orange;
+			is_jammed <- true;
 			date t <- get_current_date() add_minutes deadlock_patience;
 			do later the_action: "deadlock_prevention" with_arguments: map("vehicle"::vehicle) at: t;		
 		}
@@ -157,11 +157,9 @@ species Road skills: [scheduling] schedules: [] {
 				//next car leaving (pedestrian or bikes are not concerned) only the width-vehicles can not be schedule if they are not first in queue
 				date leave_date <- v.value;
 				
-				if leave_date <= last_exit add_seconds outflow_delay {
-					leave_date <- last_exit add_seconds outflow_delay + 1; //the +1 matters here (not sure why though)
-				}
-				if leave_date <= get_current_date() {
-					leave_date <- get_current_date() add_seconds 1;
+				//here last_exit is like get_current_date()
+				if leave_date < last_exit add_seconds outflow_delay {
+					leave_date <- last_exit add_seconds outflow_delay ; //the +1 matters here (not sure why though)
 				}
 				
 				do later the_action: "propose" with_arguments: map("vehicle"::v.key) at: leave_date;
@@ -183,6 +181,9 @@ species Road skills: [scheduling] schedules: [] {
 		//cleaning the list
 		loop t over: trash {
 			remove t from: waiting_list;
+		}
+		if empty(waiting_list) {
+			is_jammed <- false;
 		}
 	}
 	
