@@ -1,0 +1,40 @@
+scheduling skill line 127
+@action(name = "get_current_date")
+	public GamaDate getCurrentDate(final IScope scope) throws GamaRuntimeException {		
+		// Get manager
+		IAgent manager = (IAgent) scope.getAgent().getAttribute(IKeywordIrit.EVENT_MANAGER);
+
+		if (manager == null) {
+			throw GamaRuntimeException.error("The manager must be defined if you have to use the action \"later\"",
+					scope);
+		}
+		// Get skill and get the currentdate
+		EventManagerArchitecture eventSkill = (EventManagerArchitecture) manager.getSpecies().getArchitecture();
+		if (eventSkill == null) {
+			throw GamaRuntimeException
+					.error("The manager must use the control \"event_manager\" to execute the action \"later\"", scope);
+		}
+		return eventSkill.getCurrentDate(scope, manager);
+	}
+EventManager line 62
+//author olivier
+	public GamaDate getCurrentDate(final IScope scope) {
+		/*
+		 * The idea of this getter is to use the date of the last event as a global reference of the current time in Gama
+		 * because if the Gama simulation uses big steps of time, the current_date variable won't be updated along the creation of events that
+		 * may be created within a Gama step. So we use the date of the last event as the current time
+		 */
+		if (lastEvent == null){
+			GamaDate simDate = scope.getSimulation().getClock().getCurrentDate();
+			return simDate;
+		}else {
+			return lastEvent.getDate();
+		}
+	}
+	
+
+EventManagerArchitecture line 55
+//	@getter(GamaDate)
+	public GamaDate getCurrentDate(final IScope scope, final IAgent agent) {
+		return getCurrentManagerIfExists(agent).getCurrentDate(scope);
+	}

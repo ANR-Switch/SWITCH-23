@@ -410,19 +410,18 @@ species Person skills: [scheduling] schedules: [] {
 
    
    action highlight_path(int i){
-   	//TODO
-   	bool found <- false;
-   	loop t over: journal.event_log {
-   		if t.trip_idx = i {
-   			found <- true;
-   			ask t.road {
-   				color <- #red;
+   	 	bool found <- false;
+   		loop t over: journal.event_log {
+   			if t.trip_idx = i {
+	   			found <- true;
+	   			ask Road(t.road) {
+	   				color <- #red;
+	   			}
    			}
-   		}
-   	}
-   	if !found {
-   		write "Cannot find a matching path to highlight." color:#red;
-   	}
+	   	}
+	   	if !found {
+	   		write "Cannot find a matching path to highlight." color:#red;
+	   	}
    }
    
    //To add later

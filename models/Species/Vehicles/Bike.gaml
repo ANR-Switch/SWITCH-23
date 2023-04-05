@@ -19,7 +19,7 @@ species Bike parent: Vehicle schedules: [] {
 		color <- #limegreen;
 	}
 	
-	action init_vehicle(Person _owner, float _length<-0.0#meter, float _speed<-30#km/#h, int _seats<-1){
+	action init_vehicle(Person _owner, float _length<-0.0#meter, float _speed<-22#km/#h, int _seats<-1){
 		owner <- _owner;
 //		do add_passenger(owner);
 		location <- _owner.location;

@@ -17,8 +17,10 @@ species LoggedRoadEvent schedules: [] {
 	int trip_idx;
 	string activity_name;
 	string vehicle;
-	Road road;
+	string road;
+	int road_length;
 	date entry_date;
-	date leaving_date; 
+	date leave_date; 
+	float mean_speed;
 	int lateness;
 }

@@ -18,19 +18,19 @@ import "Species/Map/Building.gaml"
 
 import "Utilities/Population_builder.gaml"
 
-global {	
+global {
+	//FILES
+	string dataset_path <- "../includes/Castanet-Tolosan/CASTANET-TOLOSAN/";
+	//output files are in Logger.gaml
+	
+	shape_file shape_roads <- shape_file(dataset_path + "road.shp");
+	shape_file shape_buildings <- shape_file(dataset_path + "buildings.shp");
+	geometry shape <- envelope(shape_roads);
+	
+	//SIM	
 	float step <- 360 #seconds parameter: "Step"; //86400 for a day
 	float simulated_days <- 1 #days parameter: "Simulated_days";
 	float experiment_init_time;
-	
-	//loading parameters
-	string dataset_path <- "../includes/Castanet-Tolosan/CASTANET-TOLOSAN/";
-//	string dataset_path <- "../includes/Castanet-Tolosan/TEST/";
-	shape_file shape_roads <- shape_file(dataset_path + "road.shp");
-//	shape_file shape_nodes <- shape_file(dataset_path + "nodes.shp");
-//	shape_file shape_boundary <- shape_file(dataset_path + "bounds.shp");
-	shape_file shape_buildings <- shape_file(dataset_path + "buildings.shp");
-	geometry shape <- envelope(shape_roads);
 	
 	//general paramters	 
 	date starting_date <- date([1970, 1, 1, 6, 0, 0]);
@@ -66,8 +66,7 @@ global {
 		do normalize_modality();
 		
 		////Constants and Logger
-		create Constants; //constant file useful for other species
-		create Logger; //logger
+		create Constants; //constant file useful for other species		
 		
 		//init
 		do init_event_managers; //good to do first
@@ -81,6 +80,12 @@ global {
 	 	do link_roads_to_event_manager(EventManager[0]);
 	 	//final init statement
 	 	do register_all_first_activities;
+		
+		//logger should be created after the other species
+		if Constants[0].log_journals or Constants[0].log_roads or Constants[0].log_traffic {
+			create Logger;
+			Logger[0].event_manager <- EventManager[0];	
+		}
 		
 		write "Simulation is ready. In " + (machine_time - sim_init_time)/1000.0 + " seconds." ;
 	}
@@ -225,14 +230,22 @@ global {
 	 
 	 reflex { 
 		if cycle = 0 {
-			//start
+			//save the starting time for information
 			experiment_init_time <- machine_time;
 		}
 	 	if Person count(each.day_done) = length(Person) {
-	 		ask Logger[0] {
-	 			do final_log;
-	 		}
 	 		write "\n The experiment took: " + (machine_time - experiment_init_time)/1000.0 + " seconds.";
+	 		
+	 		//LOGS
+	 		if !empty(Logger) {
+		 		ask Logger[0] {
+		 			do save_real_time_logs;
+		 			do save_journal_logs;
+		 		}	
+		 	}
+	 		
+	 		//just to know:
+			write "\n " + Person count(each.is_going_in_ext_zone) + " persons went out of the simulated city to work.";
 	 		do pause;
 	 	}
 	 }
@@ -245,7 +258,7 @@ experiment "Display & Graphs" type: gui {
 	 * Parameters
 	 */
 	parameter "Step" var: step category: "Simulation step in second" min:1.0 ;
-	parameter "Simulated_days" var: simulated_days category: "Simulation days" min:1.0 #days;
+//	parameter "Simulated_days" var: simulated_days category: "Simulation days" min:1.0 #days;
 	parameter "Pedestrians" var: feet_weight category: "modality" min:0.0;
 	parameter "Bikes" var: bike_weight category: "modality" min:0.0;
 	parameter "Cars" var: car_weight category: "modality" min:0.0;

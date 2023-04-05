@@ -70,9 +70,12 @@ species Vehicle virtual: true schedules: [] {
 	}
 	
 	action log (int _lateness){
-		date leaving_date <- get_current_date();
+		date leave_date <- get_current_date();
+		float distance <- current_road.shape.perimeter;
+		float mean_speed <- distance / (leave_date - log_entry_date);
+		mean_speed <- (mean_speed * 3.6) with_precision 1;
 		ask owner.journal {
-			do write_in_journal(myself.owner.act_idx, myself.name, myself.current_road, myself.log_entry_date, leaving_date, _lateness);
+			do write_in_journal(myself.owner.act_idx, myself.name, myself.current_road.name, round(distance), myself.log_entry_date, leave_date, mean_speed, _lateness);
 		}
 	}
 }

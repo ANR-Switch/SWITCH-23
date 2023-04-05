@@ -12,7 +12,7 @@ import "../Vehicles/Vehicle.gaml"
 species Road skills: [scheduling] schedules: [] {
 	int id;
 	int lanes <- 1; //From shapefile 
-	float max_speed <- 50.0 #km / #h; // From shapefile
+	float max_speed <- 50.0 #km/#h; // From shapefile //must be then transformed in m/s
 	string oneway <- "no"; //From shapefile
 	unknown allowed_vehicles;
 	point trans <- {2.0, 2.0};
@@ -28,20 +28,21 @@ species Road skills: [scheduling] schedules: [] {
 	//traffic attributes
 	float current_capacity <- 0.0;
 	float max_capacity <- shape.perimeter * lanes;
-	float alpha <- 0.15 const: true;
-	float beta <- 4.0 const: true;
+	float alpha <- Constants[0].alpha;
+	float beta <- Constants[0].beta;
+	float speed_factor <- Constants[0].speed_factor;
 	date last_entry;
 	date last_exit;
 	float inflow_delay <- Constants[0].inflow_delay;
 	float outflow_delay <- Constants[0].outflow_delay;
-	float gap_travel_time <- shape.perimeter / 2; 
+	float gap_travel_time <- shape.perimeter / 5; 
 	int deadlock_patience <- Constants[0].deadlock_patience; //minutes to try to force the car inside the road
 	list<pair<Vehicle, date>> _queue; //queue is a build-in name so we use _queue
 	list<Vehicle> waiting_list;
 	
 	//test
 	float max_tmp_alocated_test;
-	int car_counter_ <- 0;	
+	int entry_counter_ <- 0;	
 	
 	//output display
 	bool is_jammed <- false;
@@ -64,6 +65,9 @@ species Road skills: [scheduling] schedules: [] {
 		}
 		displayed_shape <- (shape + lanes) translated_by (trans * 2);
 
+		//necessary because the speed of the vehicle is automatically set to m/s
+		float speed <- max_speed/3.6;
+		max_speed <- speed #m/#s;
 		//some security checks
 		if max_capacity < 5.0 {
 			max_capacity <- 5.0;
@@ -94,6 +98,7 @@ species Road skills: [scheduling] schedules: [] {
 				do later the_action: "propose" with_arguments: map("vehicle"::vehicle) at: leave_date;
 			}
 			match Car {
+				t_min <- t_min / speed_factor;
 				if empty(_queue){
 					//case: the vehicle can only go out if it's the first in queue
 					leave_date <- get_current_date() add_seconds t_min;
@@ -228,7 +233,7 @@ species Road skills: [scheduling] schedules: [] {
 			color <- rgb(255 * (current_capacity / max_capacity), 0, 0);
 			add pair(vehicle::leave_date) to: _queue;
 			last_entry <- get_current_date();
-			car_counter_ <- car_counter_ + 1;
+			entry_counter_ <- entry_counter_ + 1;
 		}else{
 			write get_current_date() + ": " + name+ " tried to add " + vehicle.name + " but it was already in queue. This should not happen." color:#red;
 		}
@@ -295,7 +300,15 @@ species Road skills: [scheduling] schedules: [] {
 	
 	float get_theoretical_travel_time(Vehicle v){
 		float speed <- min(max_speed, v.speed);
-		return (shape.perimeter / speed);
+		if species(v) = Car { //TODO add for buses ?
+			return  (shape.perimeter / speed) / speed_factor;
+		}else{
+			return (shape.perimeter / speed);	
+		}
+	}
+	
+	float get_capacity_ratio {
+		return current_capacity/max_capacity;
 	}
 	
 	action allowed_vehicles_init {
