@@ -10,7 +10,7 @@ model Constants
 
 species Constants {
 	//logs
-	bool log_journals <- true const:true;
+	bool log_journals <- false const:true;
 	bool log_roads <- true const:true;
 	bool log_traffic <- true const:true;
 	

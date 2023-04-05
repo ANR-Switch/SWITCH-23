@@ -30,9 +30,15 @@ species Logger skills: [scheduling] {
 	string traffic_file <- output_path + traffic_output_file ;
 	string journals_file <- output_path + journals_output_file ;
 	
-	
+	//msg
 	list full_road_msg_csv <- [];
 	list full_traffic_msg <- [];
+	
+	//utilities
+	string d;
+	string h;
+	string m;
+	string s;
 
 	
 	action log_roads{
@@ -45,6 +51,7 @@ species Logger skills: [scheduling] {
 			}
 			add ratio to: new_msg ;				
 		}
+		add get_date_in_string() to: new_msg;
 //		add get_current_date() to: new_msg;
 		
 		add new_msg to: full_road_msg_csv;
@@ -54,7 +61,8 @@ species Logger skills: [scheduling] {
 		int cars <- Person count(each.is_moving_chart and species(each.current_vehicle)=Car);
 		int bikes <- Person count(each.is_moving_chart and species(each.current_vehicle)=Bike);
 		int feet <- Person count(each.is_moving_chart and species(each.current_vehicle)=Feet);
-		add [cars, bikes, feet, get_current_date()] to: full_traffic_msg;
+		add [cars, bikes, feet, get_date_in_string()] to: full_traffic_msg;
+//		add [cars, bikes, feet, get_current_date()] to: full_traffic_msg;
 	}
 	
 	action save_journal_logs {
@@ -129,6 +137,30 @@ species Logger skills: [scheduling] {
 			}
 			write "Done.";
 		}
+	}
+	
+	string get_date_in_string {
+		if get_current_date().day < 10 {
+			d <- "0" + string(get_current_date().day);
+		}else{
+			d <- string(get_current_date().day);
+		}
+		if get_current_date().hour < 10 {
+			h <- "0" + string(get_current_date().hour);
+		}else{
+			h <- string(get_current_date().hour);
+		}
+		if get_current_date().minute < 10 {
+			m <- "0" + string(get_current_date().minute);
+		}else{
+			m <- string(get_current_date().minute);
+		}
+		if get_current_date().second < 10 {
+			s <- "0" + string(get_current_date().second);
+		}else{
+			s <- string(get_current_date().second);
+		}
+		return d+ "-" + h + ":" + m + ":" + s;
 	}
 	
 	reflex log {
