@@ -6,6 +6,8 @@
 */
 model World
 
+import "Utilities/GTFS_reader.gaml"
+
 import "Utilities/Constants.gaml"
 
 import "Utilities/EventManager.gaml"
@@ -74,6 +76,7 @@ global {
 	 	do init_roads;
 	 	do init_graphs; //should be done after roads
 	 	do init_persons;
+	 	do init_common_transport;
 	 	
 	 	//linkage
 	 	do link_persons_to_event_manager(EventManager[0]);
@@ -219,6 +222,10 @@ global {
 	 	car_road_graph <- directed(car_road_graph);
 	 	write "Cars can use " + length(road_subset) + " road segments.";
 	 	write "Graphs created in " + (machine_time-t1)/1000.0 + " seconds.";
+	 }
+	 
+	 action init_common_transport {
+	 	create GTFSreader;
 	 }
 	 
 	 action normalize_modality {
