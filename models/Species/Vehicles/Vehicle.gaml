@@ -14,7 +14,7 @@ import "../../World.gaml"
  * this class is an interface of all the transportation modes
  */
 
-species Vehicle virtual: true schedules: [] {
+species Vehicle virtual: true skills: [scheduling] schedules: [] {
 	rgb color;
 	float length;
 	float speed <- 0.0 #km / #h;
@@ -37,13 +37,13 @@ species Vehicle virtual: true schedules: [] {
 	path compute_path_between(point p1, point p2) virtual: true;
 	
 	//same for everyone
-	date get_current_date{
-		date _d;
-		ask owner {
-			_d <- get_current_date();
-		}
-		return _d;
-	}
+//	date get_current_date{
+//		date _d;
+//		ask owner {
+//			_d <- get_current_date();
+//		}
+//		return _d;
+//	}
 	
 	action add_passenger(Person p){
 		if length(passengers) < seats {

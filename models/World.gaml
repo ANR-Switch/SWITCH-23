@@ -30,12 +30,12 @@ global {
 	geometry shape <- envelope(shape_roads);
 	
 	//SIM	
-	float step <- 360 #seconds parameter: "Step"; //86400 for a day
+	float step <- 60 #seconds parameter: "Step"; //86400 for a day
 	float simulated_days <- 1 #days parameter: "Simulated_days";
 	float experiment_init_time;
 	
 	//general paramters	 
-	date starting_date <- date([1970, 1, 1, 6, 0, 0]);
+	date starting_date <- date([1970, 1, 1, 4, 0, 0]);
 	date sim_starting_date <- date([1970, 1, 1, 0, 0, 0]); //has to start at midnight! for activity.gaml init
 
 	//modality
@@ -105,7 +105,9 @@ global {
 	action link_persons_to_event_manager(EventManager e){
 		//to be used only if the agents possess the scheduling skill
 		loop p over: Person {
-			p.event_manager <- e;
+			ask p {
+				do link_event_manager(e);
+			}
 		}
 	}
 	
@@ -377,9 +379,11 @@ experiment "Display only" type: gui {
 	output {
 		display main_window type: opengl {
 			species Road;
+			species TransportStop;
 			species Building;
 			species Person;
 			species Car;
+			species Bus;
 		}
 	}
 }

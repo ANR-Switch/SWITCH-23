@@ -23,7 +23,7 @@ species TransportTrip skills: [scheduling] schedules: [] {
 	int trip_id;
 	int direction_id;
 	int shape_id;
-	int route_type;
+	int route_type; //3:bus, 1:metro, 0:tram, 6:telepherique (to match with CSV, in GTFS_reader)
 	
 	//the itinerary
 	list<TransportStop> stops;
@@ -39,12 +39,26 @@ species TransportTrip skills: [scheduling] schedules: [] {
 	}
 	
 	action start_trip {
-		create Bus {
-			trip <- myself;
-			location <- trip.stops[0].location;
-			do take_passengers_in;
-			do goto(trip.stops[1].location);
+//		write get_current_date() + ": " + route_long_name + " starts." color:#purple;
+		switch route_type {
+			match 3 {
+				create Bus {
+					event_manager <- myself.event_manager;
+					trip <- myself;
+					location <- trip.stops[0].location;
+					do init_vehicle(Person[0]);
+					
+					write get_current_date() + ": " + myself.route_long_name + " starts a trip with: " + name color:#pink;
+					
+					do take_passengers_in;
+					do go_to_next_stop;
+				} 
+			}
+			match 1 {
+				
+			}
 		}
+		
 	}
 	
 	action add_stop(string departure_str, TransportStop ts){

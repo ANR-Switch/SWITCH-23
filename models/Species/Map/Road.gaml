@@ -69,8 +69,8 @@ species Road skills: [scheduling] schedules: [] {
 		float speed <- max_speed/3.6;
 		max_speed <- speed #m/#s;
 		//some security checks
-		if max_capacity < 5.0 {
-			max_capacity <- 5.0;
+		if max_capacity < Constants[0].minimum_road_capacity_required {
+			max_capacity <- Constants[0].minimum_road_capacity_required;
 			write name + " defines the minimum max_capacity value." color:#orange;
 		}
 		
@@ -98,6 +98,31 @@ species Road skills: [scheduling] schedules: [] {
 				do later the_action: "propose" with_arguments: map("vehicle"::vehicle) at: leave_date;
 			}
 			match Car {
+				t_min <- t_min / speed_factor;
+				if empty(_queue){
+					//case: the vehicle can only go out if it's the first in queue
+					leave_date <- get_current_date() add_seconds t_min;
+					do add(vehicle, leave_date);
+					do later the_action: "propose" with_arguments: map("vehicle"::vehicle) at: leave_date;
+				}else{
+					//case: is there a non overtakable vehicle in front of us ?
+					bool _bool <- is_there_blocking_vehicle();
+	
+					if _bool {
+						float capacity_ratio <- compute_capacity_ratio_for_traffic();
+						float t <- t_min * ( 1 + alpha * capacity_ratio ^ beta );
+						leave_date <- get_current_date() add_seconds t;
+						//case: we do not schedule a leaving time yet
+						do add(vehicle, leave_date);
+					}else{
+						//case: there are some vehicle in front of us but we can overtake them (they are pedestrians or cyclists)
+						leave_date <- get_current_date() add_seconds t_min;
+						do add(vehicle, leave_date);
+						do later the_action: "propose" with_arguments: map("vehicle"::vehicle) at: leave_date;
+					}
+				}	
+			}
+			match Bus {
 				t_min <- t_min / speed_factor;
 				if empty(_queue){
 					//case: the vehicle can only go out if it's the first in queue
@@ -158,7 +183,7 @@ species Road skills: [scheduling] schedules: [] {
 	
 	action schedule_next_leaving_width_vehicle {
 		loop v over: _queue {
-			if species(v.key) = Car { //TODO add bus
+			if species(v.key) = Car or species(v.key) = Bus { 
 				//next car leaving (pedestrian or bikes are not concerned) only the width-vehicles can not be schedule if they are not first in queue
 				date leave_date <- v.value;
 				
@@ -168,7 +193,6 @@ species Road skills: [scheduling] schedules: [] {
 				}
 				
 				do later the_action: "propose" with_arguments: map("vehicle"::v.key) at: leave_date;
-//				write get_current_date() + ": " + name + " schedules next " + v.key.name + " at " + leave_date color: #green;
 				return;
 			}
 		}
@@ -203,7 +227,7 @@ species Road skills: [scheduling] schedules: [] {
 				remove index: _idx from: _queue;
 				
 				//update waiting_list and next leaving car since a new slot is free
-				if species(vehicle) = Car { //TODO bus
+				if species(vehicle) = Car or species(vehicle) = Bus{ 
 					do schedule_next_leaving_width_vehicle;	
 				}
 				do later the_action: "update_waiting_list" at: get_current_date() add_seconds gap_travel_time;
@@ -291,7 +315,7 @@ species Road skills: [scheduling] schedules: [] {
 	
 	bool is_there_blocking_vehicle {
 		loop e over: _queue {
-			if species(e.key) = Car { //TODO add truck and bus
+			if species(e.key) = Car or species(e.key) = Bus {
 				return true;
 			}
 		}
@@ -300,7 +324,7 @@ species Road skills: [scheduling] schedules: [] {
 	
 	float get_theoretical_travel_time(Vehicle v){
 		float speed <- min(max_speed, v.speed);
-		if species(v) = Car { //TODO add for buses ?
+		if species(v) = Car or species(v) = Bus { 
 			return  (shape.perimeter / speed) / speed_factor;
 		}else{
 			return (shape.perimeter / speed);	

@@ -424,6 +424,13 @@ species Person skills: [scheduling] schedules: [] {
 	   	}
    }
    
+   action link_event_manager (EventManager e){
+   		event_manager <- e;
+   		loop v over: vehicles {
+   			v.event_manager <- e;
+   		}
+   }
+   
    //To add later
 //   action cancel_highlight(int i){
 //   		loop r over: past_paths[i] {

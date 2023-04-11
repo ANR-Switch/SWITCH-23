@@ -45,6 +45,6 @@ species TransportStop schedules: [] {
 	
 	
 	aspect default {
-		draw square(10) color: #purple;
+		draw square(25) color: #purple;
 	}
 }

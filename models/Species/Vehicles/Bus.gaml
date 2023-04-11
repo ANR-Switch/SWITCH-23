@@ -18,15 +18,19 @@ import "Vehicle.gaml"
 species Bus parent: Vehicle schedules: [] {
 	rgb parking_color <- rgb([125, 92, 103]);
 	rgb driving_color <- #pink;
+	
+	//bus
 	TransportTrip trip;
 	int current_stop_idx <- 0;
+	string next_stop ; //useful for debug
 	
 	init {
 		color <- parking_color;
 	}
 	
-	action init_vehicle(Person _owner, float _length<-10.0#meter, float _speed<-90#km/#h, int _seats<-40){
+	action init_vehicle(Person _owner, float _length<-11.0#meter, float _speed<-90#km/#h, int _seats<-40){
 		//_owner is to match the other vehicle classes, but a common transport doesnot need one
+//		owner <- _owner; //random assignement, useless except to use get_current_date of Vehicle.gaml
 		length <- _length;
 		speed <- _speed;
 		seats <- _seats;	
@@ -36,6 +40,8 @@ species Bus parent: Vehicle schedules: [] {
 		current_stop_idx <- current_stop_idx + 1;
 		
 		if current_stop_idx < length(trip.stops){
+			next_stop <- trip.stops[current_stop_idx].real_name;
+			
 			my_path <- compute_path_between(location, trip.stops[current_stop_idx].location);
 		
 			if my_path = nil {
@@ -44,6 +50,7 @@ species Bus parent: Vehicle schedules: [] {
 				if !empty(my_path.edges) {
 					do propose;			
 				}else{
+					//this happens
 					write get_current_date() + ": " + name + " but the path computed is null.";
 				}	
 			}
@@ -54,6 +61,10 @@ species Bus parent: Vehicle schedules: [] {
 	
 	path compute_path_between(point p1, point p2) {
 		return path_between(car_road_graph, p1, p2);
+	}
+	
+	action take_passengers_out {
+		
 	}
 	
 	action take_passengers_in {
@@ -68,20 +79,8 @@ species Bus parent: Vehicle schedules: [] {
 	}
 	
 	action goto(point dest){
-		//init
-		current_road <- nil;
-		my_destination <- dest;
-		my_path <- compute_path_between(location, my_destination);
-
-		if my_path = nil {
-			write get_current_date() + ": " + name + " for: " + trip.route_long_name +" is not able to find a path between " + location + " and " + dest color: #red;
-		}else{
-			if !empty(my_path.edges) {
-				do propose;			
-			}else{
-				write get_current_date() + ": " + name + " but the path computed is null.";
-			}	
-		}
+		//leave this fct even tho it is not used because of the interface Vehicle.gaml
+		write "goto on a common transport should not be called! \n go_to_next_stop is used instead" color:#red;
 	}
 	
 	action propose {
@@ -94,17 +93,17 @@ species Bus parent: Vehicle schedules: [] {
 	
 	action enter_road(Road road){
 		//log
-		if current_road != nil {
-			//here we register previous road info in the log
-			float t;
-			ask current_road {
-				t <- get_theoretical_travel_time(myself);
-			}
-			int road_lateness <- int((get_current_date() - log_entry_date) - t);
-			do log(road_lateness);
-		}
-		log_entry_date <- get_current_date();
-		//
+//		if current_road != nil {
+//			//here we register previous road info in the log
+//			float t;
+//			ask current_road {
+//				t <- get_theoretical_travel_time(myself);
+//			}
+//			int road_lateness <- int((get_current_date() - log_entry_date) - t);
+//			do log(road_lateness);
+//		}
+//		log_entry_date <- get_current_date();
+//		//
 		
 		color <- driving_color;
 		current_road <- road;
@@ -117,16 +116,16 @@ species Bus parent: Vehicle schedules: [] {
 		//delete from previous road
 		if current_road != nil {
 			//log
-			float t;
-			ask current_road {
-				t <- get_theoretical_travel_time(myself);
-			}
-			int road_lateness <- int((get_current_date() - log_entry_date) - t);
-			do log(road_lateness);
+//			float t;
+//			ask current_road {
+//				t <- get_theoretical_travel_time(myself);
+//			}
+//			int road_lateness <- int((get_current_date() - log_entry_date) - t);
+//			do log(road_lateness);
 			//
 			
-			list<point> p <- current_road.displayed_shape closest_points_with(owner.current_destination);
-			do move_to(p[0]);
+//			list<point> p <- current_road.displayed_shape closest_points_with(owner.current_destination);
+//			do move_to(p[0]);
 			ask current_road {
 				bool found <- remove(myself);	
 				assert found warning: true;
@@ -136,10 +135,20 @@ species Bus parent: Vehicle schedules: [] {
 		}
 		color <- parking_color;
 		current_road <- nil;
+
+		do take_passengers_out;
+		do take_passengers_in;
+	
+		if get_current_date() >= trip.departure_times[current_stop_idx] {
+			do go_to_next_stop;
+		}else{
+			do later the_action: "go_to_next_stop" at:trip.departure_times[current_stop_idx];
+		}
+
 	}
 	
 	aspect default {
-		draw circle(10) color: color border: #black;
+		draw circle(20) color: color border: #black;
 	}
 }
 

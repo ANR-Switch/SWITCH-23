@@ -20,6 +20,7 @@ species Constants {
 	float ratio_exterior_workers <- 0.85 const: true; //[0;1]
 	
 	//road
+	float minimum_road_capacity_required <- 11.0 const:true; //size of a bus
 	float speed_factor <- 0.7 const:true;
 	float inflow_delay <- 2.0 const: true;
 	float outflow_delay <- 3.0 const: true;

@@ -26,6 +26,7 @@ species Feet parent: Vehicle schedules: [] {
 		length <- _length;
 		speed <- _speed;
 		seats <- _seats;
+		event_manager <- owner.event_manager;
 		add self to: owner.vehicles;
 //		owner.current_vehicle <- self;
 	}

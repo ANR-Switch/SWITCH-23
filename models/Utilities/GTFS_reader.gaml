@@ -28,10 +28,6 @@ species GTFSreader schedules: [] {
 	csv_file stop_times_csv <- csv_file(stop_times_file, ",", true);
 	csv_file routes_csv <- csv_file(routes_file, ",", true);
 	
-	//matrix
-//	matrix stops <- stops_csv.contents;
-//	matrix routes <- routes_csv.contents;
-	
 	//maps
 	map<string, int> stops_map;
 	map<int, int> trips_map;
@@ -39,6 +35,7 @@ species GTFSreader schedules: [] {
 	init {
 		do create_stops;
 		do create_trips;
+		do schedule_trips;
 	}
 	
 	action create_stops {
@@ -47,7 +44,7 @@ species GTFSreader schedules: [] {
 			real_name::read("stop_name"),
 			id::string(read("stop_id")),
 			code::int(read("stop_code")),
-			location::point(to_GAMA_CRS(point(float(read("stop_lat")), float(read("stop_lon")))))
+			location::point(to_GAMA_CRS({float(read("stop_lon")), float(read("stop_lat")),0.0},"EPSG:4326"))
 		];
 		
 		//create a map to find more quickly the corresponding stop 
@@ -78,7 +75,7 @@ species GTFSreader schedules: [] {
 		}
 		write "Done.";
 		
-		// link dta more consistently
+		// link data more consistently
 		do link_trips_name;
 		do link_trips_stops_times;
 	}
@@ -125,15 +122,25 @@ species GTFSreader schedules: [] {
 		/*
 		 * 0 : route_id
 		 * 3 : route_long_name
-		 * 6 : route_type
+		 * 6 : route_type => 3:bus, 1:metro, 0:tram, 6:telepherique
 		 */
-		 
-		int trip_idx;
-		 
+		 		 
 		loop _row over: rows_list(routes_csv.contents) {
-			trip_idx <- trips_map[int(_row[0])];
-			TransportTrip[trip_idx].route_long_name <- string(_row[3]);
-			TransportTrip[trip_idx].route_type <- int(_row[6]);			
+			loop _trip over: TransportTrip {
+				if string(_row[0]) = _trip.route_id {
+					_trip.route_long_name <- string(_row[3]);
+					_trip.route_type <- int(_row[6]);	
+				}	
+			}	
+		}
+	}
+	
+	action schedule_trips {
+		loop _t over: TransportTrip {
+			_t.event_manager <- EventManager[0];
+			ask _t {
+				do schedule_departure_time;
+			}
 		}
 	}
 }
