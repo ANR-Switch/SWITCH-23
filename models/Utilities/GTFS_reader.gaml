@@ -47,7 +47,7 @@ species GTFSreader schedules: [] {
 			real_name::read("stop_name"),
 			id::string(read("stop_id")),
 			code::int(read("stop_code")),
-			location::point(float(read("stop_lat")), float(read("stop_lon")))
+			location::point(to_GAMA_CRS(point(float(read("stop_lat")), float(read("stop_lon")))))
 		];
 		
 		//create a map to find more quickly the corresponding stop 
@@ -70,6 +70,7 @@ species GTFSreader schedules: [] {
 		];
 		
 		//create a map to find more quickly the corresponding trip 
+		
 		int index_in_list <- 0;
 		loop _trip over: TransportTrip {
 			add _trip.trip_id::index_in_list to: trips_map;	
@@ -105,56 +106,34 @@ species GTFSreader schedules: [] {
 		int curr_trip;
 		int trip_idx;
 		int stop_idx;
-		int idx <- 0;
 		
+		float t <- machine_time;
 		loop _row over: rows_list(stop_times_mat) {
 			curr_trip <- int(_row[0]);
 			
+			trip_idx <- trips_map[curr_trip];
+			stop_idx <- stops_map[string(_row[3])];
 			
-			//the check is just to avoid call get_index at every row
-			if curr_trip != prev_trip {
-				trip_idx <- get_index_from_int(trips_map, curr_trip);
-				prev_trip <- curr_trip;
-				write "" + idx + " done.";
-			}
-			
-			stop_idx <- get_index_from_string(stops_map, _row[3]);
 			ask TransportTrip[trip_idx] {
 				do add_stop(_row[2], TransportStop[stop_idx]);
 			}
-			
-			idx <- idx + 1;
 		}
+		write "TransportTrips loaded in " + (machine_time-t)/1000 + " seconds.";
 	}
 	
 	action link_trips_name {
 		/*
 		 * 0 : route_id
 		 * 3 : route_long_name
+		 * 6 : route_type
 		 */
+		 
+		int trip_idx;
+		 
 		loop _row over: rows_list(routes_csv.contents) {
-			loop trip over: TransportTrip {
-				if string(_row[0]) = trip.route_id {
-					trip.route_long_name <- string(_row[3]);
-				}
-			}
+			trip_idx <- trips_map[int(_row[0])];
+			TransportTrip[trip_idx].route_long_name <- string(_row[3]);
+			TransportTrip[trip_idx].route_type <- int(_row[6]);			
 		}
-	}
-	
-	int get_index_from_string (map _map, string id) {
-		loop _e over: _map.pairs {
-			if _e.key = id {
-				return int(_e.value);
-			}
-		}
-		write "Mtd get_index was not able to find: " + id color:#red;
-	}
-	int get_index_from_int (map _map, int id) {
-		loop _e over: _map.pairs {
-			if _e.key = id {
-				return int(_e.value);
-			}
-		}
-		write "Mtd get_index was not able to find: " + id color:#red;
 	}
 }

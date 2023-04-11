@@ -37,7 +37,7 @@ species Road skills: [scheduling] schedules: [] {
 	float outflow_delay <- Constants[0].outflow_delay;
 	float gap_travel_time <- shape.perimeter / 5; 
 	int deadlock_patience <- Constants[0].deadlock_patience; //minutes to try to force the car inside the road
-	list<pair<Vehicle, date>> _queue; //queue is a build-in name so we use _queue
+	list<pair<Vehicle, date>> _queue; //queue is a build-in name so we use _queue TODO: use a map ?
 	list<Vehicle> waiting_list;
 	
 	//test

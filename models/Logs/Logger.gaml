@@ -94,7 +94,7 @@ species Logger skills: [scheduling] {
 		if log_roads_bool {
 			write "Writing the roads output file in: " + roads_file;
 			bool erased <- false;
-			loop line over: full_road_msg_csv {
+			loop _line over: full_road_msg_csv {
 				if !erased {
 					//make header
 					list header <- [];
@@ -106,7 +106,7 @@ species Logger skills: [scheduling] {
 					
 					//write line properly
 					list to_write <- [];
-					loop capacity over: line {
+					loop capacity over: _line {
 						add capacity to: to_write;
 					} 
 					save to_write to: roads_file format:"csv" rewrite:false;
@@ -114,7 +114,7 @@ species Logger skills: [scheduling] {
 				}else{
 					//write line properly
 					list to_write <- [];
-					loop capacity over: line {
+					loop capacity over: _line {
 						add capacity to: to_write;
 					} 
 					save to_write to: roads_file format:"csv" rewrite:false;
