@@ -11,7 +11,7 @@
 
 model Bus
 
-import "../Map/TransportTrip.gaml"
+import "../Transports/TransportTrip.gaml"
 
 import "Vehicle.gaml"
 

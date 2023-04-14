@@ -8,11 +8,11 @@
 
 model GTFSreader
 
-import "../Species/Map/TransportRoute.gaml"
+import "../Species/Transports/TransportRoute.gaml"
 
-import "../Species/Map/TransportTrip.gaml"
+import "../Species/Transports/TransportTrip.gaml"
 
-import "../Species/Map/TransportStop.gaml"
+import "../Species/Transports/TransportStop.gaml"
 
 species GTFSreader schedules: [] {
 	string file_path <- "../../includes/gtfs/";
