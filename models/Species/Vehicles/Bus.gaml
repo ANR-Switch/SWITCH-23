@@ -16,7 +16,7 @@ import "../Map/TransportTrip.gaml"
 import "Vehicle.gaml"
 
 species Bus parent: Vehicle schedules: [] {
-	rgb parking_color <- rgb([125, 92, 103]);
+	rgb parking_color <- #gray;
 	rgb driving_color <- #pink;
 	
 	//bus
@@ -45,7 +45,8 @@ species Bus parent: Vehicle schedules: [] {
 			my_path <- compute_path_between(location, trip.stops[current_stop_idx].location);
 		
 			if my_path = nil {
-				write get_current_date() + ": " + name + " for: " + trip.route_long_name +" is not able to find a path between " + trip.stops[current_stop_idx-1] + " and " + trip.stops[current_stop_idx] color: #red;
+				write get_current_date() + ": " + name + " for: " + trip.transport_route.long_name +" is not able to find a path between " + trip.stops[current_stop_idx-1] + " and " + trip.stops[current_stop_idx] color: #red;
+//				trip.available <- false;
 			}else{
 				if !empty(my_path.edges) {
 					do propose;			
@@ -56,6 +57,8 @@ species Bus parent: Vehicle schedules: [] {
 			}
 		}else{
 			//we are in terminus
+			//TODO die
+			trip.available <- false;
 		}
 	}
 	

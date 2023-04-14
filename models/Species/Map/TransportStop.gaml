@@ -20,7 +20,7 @@ species TransportStop schedules: [] {
 	//simu
 	list<pair<Person, string>> waiting_persons;
 	
-	
+
 	list<Person> get_waiting_persons(Vehicle v){
 		list<Person> return_list;
 		

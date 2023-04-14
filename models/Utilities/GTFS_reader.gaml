@@ -8,79 +8,101 @@
 
 model GTFSreader
 
+import "../Species/Map/TransportRoute.gaml"
+
 import "../Species/Map/TransportTrip.gaml"
 
 import "../Species/Map/TransportStop.gaml"
 
-/* Insert your model definition here */
-
 species GTFSreader schedules: [] {
-	string file_path <- "../../includes/Toulouse/gtfs_tisseo/";
+	string file_path <- "../../includes/gtfs/";
 	
 	//files
 	string stops_file <- file_path + "stops.txt";
 	string trips_file <- file_path + "trips.txt";
 	string stop_times_file <- file_path + "stop_times.txt";
 	string routes_file <- file_path + "routes.txt";
+	string shapes_file <- file_path + "shapes.txt";
 	
 	csv_file stops_csv <- csv_file(stops_file, ",", true);
 	csv_file trips_csv <- csv_file(trips_file, ",", true);
 	csv_file stop_times_csv <- csv_file(stop_times_file, ",", true);
 	csv_file routes_csv <- csv_file(routes_file, ",", true);
+	csv_file shapes_csv <- csv_file(shapes_file, ",", true);
 	
 	//maps
-	map<string, int> stops_map;
-	map<int, int> trips_map;
+	map<string, TransportStop> stops_map;
+	map<string, TransportRoute> routes_map;
+	map<int, TransportTrip> trips_map;
 	
 	init {
 		do create_stops;
+		do create_routes;
 		do create_trips;
+		
+		do assign_shapes;
 		do schedule_trips;
 	}
 	
 	action create_stops {
 		write "Creating the stops...";
+				
 		create TransportStop from: stops_csv with: [
-			real_name::read("stop_name"),
+			real_name::string(read("stop_name")),
 			id::string(read("stop_id")),
-			code::int(read("stop_code")),
+			code::int(read("stop_code")), //empty ?
 			location::point(to_GAMA_CRS({float(read("stop_lon")), float(read("stop_lat")),0.0},"EPSG:4326"))
-		];
-		
-		//create a map to find more quickly the corresponding stop 
-		int index_in_list <- 0;
-		loop _stop over: TransportStop {
-			add _stop.id::index_in_list to: stops_map;	
-			index_in_list <- index_in_list + 1;	
+		] {
+			//create a map to find more quickly the corresponding stop 
+			add id::self to: myself.stops_map;	
 		}
+
+		write "Done.";
+	}
+	
+	action create_routes {
+		write "Creating the routes..."; 
+		
+		string ligneA_id <- "line:61"; //names in csv
+		string ligneB_id <- "line:69";
+		
+		create TransportRoute from: routes_csv with: [
+			route_id::string(read("route_id")),
+			short_name::string(read("route_short_name")),
+			long_name::string(read("route_long_name")),
+			type::int(read("route_type")),
+			color::rgb("#"+read("route_color"))
+		]  {			
+			//map
+			add route_id::self to: myself.routes_map;	
+		}
+
 		write "Done.";
 	}
 	
 	action create_trips {
 		write "Creating the trips...";
+		
 		create TransportTrip from: trips_csv with: [
 			route_id::read("route_id"),
 			service_id::read("service_id"),
 			trip_id::int(read("trip_id")),
 			direction_id::int(read("direction_id")),
 			shape_id::int(read("shape_id"))
-		];
-		
-		//create a map to find more quickly the corresponding trip 
-		
-		int index_in_list <- 0;
-		loop _trip over: TransportTrip {
-			add _trip.trip_id::index_in_list to: trips_map;	
-			index_in_list <- index_in_list + 1;	
+		] {
+			event_manager <- EventManager[0];
+			//create a map to find more quickly the corresponding trip 		
+			
+			add trip_id::self to: myself.trips_map;	
 		}
+		
 		write "Done.";
 		
 		// link data more consistently
-		do link_trips_name;
-		do link_trips_stops_times;
+		do assign_trips_stops_times;
 	}
 	
-	action link_trips_stops_times {
+	action assign_trips_stops_times {
 		/*
 		 * 
 		 * uses info of stop_times.txt
@@ -99,45 +121,65 @@ species GTFSreader schedules: [] {
 		 */
 		write "Start building all the trips stop times...";
 		matrix stop_times_mat <- stop_times_csv.contents;
-		int prev_trip <- -1; //this is just used for optimization
-		int curr_trip;
-		int trip_idx;
-		int stop_idx;
 		
 		float t <- machine_time;
 		loop _row over: rows_list(stop_times_mat) {
-			curr_trip <- int(_row[0]);
 			
-			trip_idx <- trips_map[curr_trip];
-			stop_idx <- stops_map[string(_row[3])];
-			
-			ask TransportTrip[trip_idx] {
-				do add_stop(_row[2], TransportStop[stop_idx]);
+			ask trips_map[int(_row[0])] {
+				if myself.stops_map[string(_row[3])] != nil {
+					do add_stop(_row[2], myself.stops_map[string(_row[3])]);	
+				}else{
+					write "Unknown TransportStop: " + _row[3] + " it appear in TransportTrip: " + myself.trips_map[int(_row[0])].trip_id color:#red;
+				}
 			}
 		}
 		write "TransportTrips loaded in " + (machine_time-t)/1000 + " seconds.";
 	}
 	
-	action link_trips_name {
+	action assign_shapes {
 		/*
-		 * 0 : route_id
-		 * 3 : route_long_name
-		 * 6 : route_type => 3:bus, 1:metro, 0:tram, 6:telepherique
+		 * This method assign a shape to each trip, but we dont display that because there
+		 * are too many trips, instead we display the routes.
+		 * The thing is that one route has multiple shapes, we let the chance decide which one will be kept.
+		 * 
+		 * 0:route_id
+		 * 1:shape_pt_lat
+		 * 2:shape_pt_lon
+		 * 3:shape_dist_traveled
+		 * 4:shape_pt_sequence
 		 */
-		 		 
-		loop _row over: rows_list(routes_csv.contents) {
-			loop _trip over: TransportTrip {
-				if string(_row[0]) = _trip.route_id {
-					_trip.route_long_name <- string(_row[3]);
-					_trip.route_type <- int(_row[6]);	
-				}	
-			}	
+		 
+		write "Creating shape of the TransportTrip...";
+		map<int, list<point>> shape_map;
+		int curr_id;
+		list curr_shape <- [];
+		 
+		loop _row over: rows_list(shapes_csv.contents) {
+			if curr_id = int(_row[0]) {
+				add point(to_GAMA_CRS({float(_row[2]), float(_row[1]),0.0},"EPSG:4326")) to: curr_shape;
+			}else{
+				add curr_id::curr_shape to: shape_map;
+				
+				curr_id <- int(_row[0]);
+				curr_shape <- [];
+			}
 		}
+		
+		//assign
+		loop _t over: TransportTrip {
+			_t.shape <- polyline(shape_map[_t.shape_id]);
+			
+			_t.transport_route <- routes_map[_t.route_id];
+			
+			//assign route's shape too (it will keep the last assignement)
+			//it is okay because it is just for display purposes.
+			routes_map[_t.route_id].shape <- polyline(shape_map[_t.shape_id]);
+		}
+		write "Done.";
 	}
 	
 	action schedule_trips {
 		loop _t over: TransportTrip {
-			_t.event_manager <- EventManager[0];
 			ask _t {
 				do schedule_departure_time;
 			}

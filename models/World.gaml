@@ -22,12 +22,16 @@ import "Utilities/Population_builder.gaml"
 
 global {
 	//FILES
-	string dataset_path <- "../includes/Castanet-Tolosan/CASTANET-TOLOSAN/";
+	string dataset_path <- "../includes/";
 	//output files are in Logger.gaml
 	
-	shape_file shape_roads <- shape_file(dataset_path + "road.shp");
-	shape_file shape_buildings <- shape_file(dataset_path + "buildings.shp");
-	geometry shape <- envelope(shape_roads);
+	shape_file shape_roads_CT <- shape_file(dataset_path + "Castanet-Tolosan/CASTANET-TOLOSAN/road.shp");
+//	shape_file shape_roads_TLS <- shape_file(dataset_path + "Toulouse/filaire-de-voirie.shp");
+	
+	//
+	shape_file shape_buildings <- shape_file(dataset_path + "Castanet-Tolosan/CASTANET-TOLOSAN/buildings.shp");
+	
+	geometry shape <- envelope(shape_roads_CT);
 	
 	//SIM	
 	float step <- 60 #seconds parameter: "Step"; //86400 for a day
@@ -35,7 +39,7 @@ global {
 	float experiment_init_time;
 	
 	//general paramters	 
-	date starting_date <- date([1970, 1, 1, 4, 0, 0]);
+	date starting_date <- date([1970, 1, 1, 0, 0, 0]);
 	date sim_starting_date <- date([1970, 1, 1, 0, 0, 0]); //has to start at midnight! for activity.gaml init
 
 	//modality
@@ -51,6 +55,7 @@ global {
 	graph car_road_graph;
 	graph feet_road_graph;
 	graph bike_road_graph;
+	graph common_transport_graph;
 	 
 	list<Building> working_buildings;
 	list<Building> living_buildings;
@@ -74,9 +79,11 @@ global {
 		do init_event_managers; //good to do first
 		do init_buildings;
 	 	do init_roads;
-	 	do init_graphs; //should be done after roads
-	 	do init_persons;
 	 	do init_common_transport;
+	 	
+	 	do init_graphs; //should be done after roads
+	 	
+	 	do init_persons;
 	 	
 	 	//linkage
 	 	do link_persons_to_event_manager(EventManager[0]);
@@ -188,14 +195,20 @@ global {
 	 	write "Roads...";
 	 	float t1 <- machine_time;
 	 	//car roads
-		create Road from: shape_roads with: [lanes::int(read("nb_lane")), 
+		create Road from: shape_roads_CT with: [lanes::int(read("nb_lane")), 
 											max_speed::float(read("max_speed")),
 											oneway::string(read("one_way")),
 											id::int(read("id")),
 											allowed_vehicles::unknown(read("vehicles"))
-		]{
-			//
-		}
+		];
+		/*create Road from: shape_roads_TLS with: [lanes::int(read("nb_lane")), 
+											max_speed::float(read("max_speed")),
+											oneway::string(read("one_way")),
+											id::int(read("id")),
+											allowed_vehicles::unknown(read("vehicles"))
+		];
+		* 
+		*/
 		write "There are " + length(Road) + " Roads loaded in " + (machine_time-t1)/1000.0 + " seconds.";
 	 }
 	 
@@ -223,6 +236,12 @@ global {
 	 	car_road_graph <- as_edge_graph(Road) with_weights road_weights_map;
 	 	car_road_graph <- directed(car_road_graph);
 	 	write "Cars can use " + length(road_subset) + " road segments.";
+	 	
+	 	//Common transports
+	 	common_transport_graph <- as_edge_graph(TransportTrip);
+	 	//test
+	 	write "TEST \n" + path_between(common_transport_graph, TransportStop[1266].location, TransportStop[4714].location);
+	 	//
 	 	write "Graphs created in " + (machine_time-t1)/1000.0 + " seconds.";
 	 }
 	 
@@ -292,9 +311,12 @@ experiment "Display & Graphs" type: gui {
 	output {
 		display main_window type: opengl {
 			species Road;
+			species TransportStop;
+			species TransportRoute;
 			species Building;
 			species Person;
 			species Car;
+			species Bus;
 		}
 		
 //		display "chart_display" {
@@ -380,6 +402,7 @@ experiment "Display only" type: gui {
 		display main_window type: opengl {
 			species Road;
 			species TransportStop;
+			species TransportRoute;
 			species Building;
 			species Person;
 			species Car;
@@ -387,20 +410,3 @@ experiment "Display only" type: gui {
 		}
 	}
 }
-
-//experiment "Headless" type: gui {
-//	parameter "Step" var: step category: "Simulation step in second" min:1.0 ;
-//	parameter "Simulated_days" var: simulated_days category: "Simulation days" min:1.0 #days;
-//	parameter "Pedestrians" var: feet_weight category: "modality" min:0.0;
-//	parameter "Bikes" var: bike_weight category: "modality" min:0.0;
-//	parameter "Cars" var: car_weight category: "modality" min:0.0;
-//	
-//	output {
-//		
-//		display "empty" {
-//			
-//		}
-//
-//	}
-//
-//}
