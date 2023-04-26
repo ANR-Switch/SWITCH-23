@@ -8,6 +8,10 @@
 
 model TransportTrip
 
+import "../Vehicles/Tramway.gaml"
+
+import "../Vehicles/Teleo.gaml"
+
 import "../Vehicles/Metro.gaml"
 
 import "../Vehicles/Bus.gaml"
@@ -70,7 +74,7 @@ species TransportTrip skills: [scheduling] schedules: [] {
 					driving_color <- myself.transport_route.color;
 					do init_vehicle(Person[0]);
 					
-					write get_current_date() + ": " + myself.transport_route.long_name + " starts a trip with: " + name color:color;
+					write get_current_date() + ": " + myself.transport_route.long_name + " starts a trip with: " + name color:driving_color;
 					
 					do take_passengers_in;
 					do go_to_next_stop;
@@ -83,22 +87,40 @@ species TransportTrip skills: [scheduling] schedules: [] {
 					trip <- myself;
 					location <- trip.stops[0].location;
 					color <- myself.transport_route.color;
-//					do init_vehicle(Person[0]);
 					
 					write get_current_date() + ": " + myself.transport_route.long_name + " starts a trip with: " + name color:color;
 					
 					do take_passengers_in;
 					do go_to_next_stop;
 				} 
-				
 			}
 			
 			match 0 {
-				//tram
+				create Tramway {
+					event_manager <- myself.event_manager;
+					trip <- myself;
+					location <- trip.stops[0].location;
+					color <- myself.transport_route.color;
+					
+					write get_current_date() + ": " + myself.transport_route.long_name + " starts a trip with: " + name color:color;
+					
+					do take_passengers_in;
+					do go_to_next_stop;
+				}
 			}
 			
 			match 6 {
-				//telepherique
+				create Teleo {
+					event_manager <- myself.event_manager;
+					trip <- myself;
+					location <- trip.stops[0].location;
+					color <- myself.transport_route.color;
+					
+					write get_current_date() + ": " + myself.transport_route.long_name + " starts a trip with: " + name color:color;
+					
+					do take_passengers_in;
+					do go_to_next_stop;
+				} 
 			}
 			
 			default {

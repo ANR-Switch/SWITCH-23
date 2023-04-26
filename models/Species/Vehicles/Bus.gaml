@@ -61,7 +61,8 @@ species Bus parent: Vehicle schedules: [] {
 			//we are in terminus
 			ask trip {
 				do end_trip;
-			}			
+			}	
+			do die;		
 		}
 	}
 	

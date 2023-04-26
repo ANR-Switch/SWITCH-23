@@ -342,6 +342,7 @@ experiment "Display & Graphs" type: gui {
 			species Car;
 			species Bus;
 			species Metro;
+			species Teleo;
 		}
 		
 //		display "chart_display" {
@@ -427,12 +428,14 @@ experiment "Display only" type: gui {
 		display main_window type: opengl {
 			species Road;
 			species TransportStop;
-			species TransportRoute;
+			species TransportEdge;
 			species Building;
 			species Person;
 			species Car;
 			species Bus;
 			species Metro;
+			species Tramway;
+			species Teleo;
 		}
 	}
 }

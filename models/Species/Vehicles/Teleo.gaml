@@ -5,13 +5,13 @@
 * Tags: 
 */
 
-model Metro
+model Teleo
 
 import "../Transports/TransportTrip.gaml"
 
 import "Vehicle.gaml"
 
-species Metro parent: Vehicle schedules: [] {
+species Teleo parent: Vehicle schedules: [] {
 	
 	TransportTrip trip;
 	int current_stop_idx <- 0;
@@ -72,12 +72,12 @@ species Metro parent: Vehicle schedules: [] {
 	}
 	
 	action propose {
-		write "The methof: propose() should not be called on a Metro agent: " + name color:#red;
+		write "The methof: propose() should not be called on a Teleo agent: " + name color:#red;
 	}
 	
 	action enter_road(Road road){
 		//
-		write "The method: enter_road() should not be called on a Metro agent: " + name color:#red;
+		write "The method: enter_road() should not be called on a Teleo agent: " + name color:#red;
 	}
 	
 	action arrive_at_destination {		
