@@ -16,6 +16,7 @@ species TransportStop schedules: [] {
 	string id;
 	int code;
 	string real_name;
+	rgb color <- #purple;
 	
 	//simu
 	list<pair<Person, string>> waiting_persons;
@@ -45,6 +46,6 @@ species TransportStop schedules: [] {
 	
 	
 	aspect default {
-		draw square(25) color: #purple;
+		draw square(25) color: color;
 	}
 }

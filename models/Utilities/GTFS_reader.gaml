@@ -171,9 +171,12 @@ species GTFSreader schedules: [] {
 			
 			_t.transport_route <- routes_map[_t.route_id];
 			
-			//assign route's shape too (it will keep the last assignement)
+			//assign route's shape too 
+			//there are several shapes for one route so we keep the longest
 			//it is okay because it is just for display purposes.
-			routes_map[_t.route_id].shape <- polyline(shape_map[_t.shape_id]);
+			if polyline(shape_map[_t.shape_id]).perimeter > routes_map[_t.route_id].shape.perimeter {
+				routes_map[_t.route_id].shape <- polyline(shape_map[_t.shape_id]);	
+			}
 		}
 		write "Done.";
 	}

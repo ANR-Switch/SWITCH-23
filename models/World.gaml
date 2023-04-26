@@ -6,6 +6,10 @@
 */
 model World
 
+import "Species/Transports/TransportGraph.gaml"
+
+import "Species/Transports/TransportEdge.gaml"
+
 import "Utilities/GTFS_reader.gaml"
 
 import "Utilities/Constants.gaml"
@@ -32,6 +36,8 @@ global {
 	shape_file shape_buildings <- shape_file(dataset_path + "Castanet-Tolosan/CASTANET-TOLOSAN/buildings.shp");
 	
 	geometry shape <- envelope(shape_roads_CT);
+//	int s <- 1000000;
+//	geometry shape <- envelope(polygon({0,0}, {0, s}, {s, 0}, {s,s}));
 	
 	//SIM	
 	float step <- 60 #seconds parameter: "Step"; //86400 for a day
@@ -55,7 +61,7 @@ global {
 	graph car_road_graph;
 	graph feet_road_graph;
 	graph bike_road_graph;
-	graph common_transport_graph;
+	TransportGraph public_transport_graph;
 	 
 	list<Building> working_buildings;
 	list<Building> living_buildings;
@@ -79,9 +85,9 @@ global {
 		do init_event_managers; //good to do first
 		do init_buildings;
 	 	do init_roads;
-	 	do init_common_transport;
+	 	do init_public_transport;
 	 	
-	 	do init_graphs; //should be done after roads
+	 	do init_graphs; //should be done after roads and public transports
 	 	
 	 	do init_persons;
 	 	
@@ -201,14 +207,7 @@ global {
 											id::int(read("id")),
 											allowed_vehicles::unknown(read("vehicles"))
 		];
-		/*create Road from: shape_roads_TLS with: [lanes::int(read("nb_lane")), 
-											max_speed::float(read("max_speed")),
-											oneway::string(read("one_way")),
-											id::int(read("id")),
-											allowed_vehicles::unknown(read("vehicles"))
-		];
-		* 
-		*/
+
 		write "There are " + length(Road) + " Roads loaded in " + (machine_time-t1)/1000.0 + " seconds.";
 	 }
 	 
@@ -237,15 +236,16 @@ global {
 	 	car_road_graph <- directed(car_road_graph);
 	 	write "Cars can use " + length(road_subset) + " road segments.";
 	 	
-	 	//Common transports
-	 	common_transport_graph <- as_edge_graph(TransportTrip);
-	 	//test
-	 	write "TEST \n" + path_between(common_transport_graph, TransportStop[1266].location, TransportStop[4714].location);
-	 	//
+	 	//Public transports
+	 	create TransportGraph returns: _graph {
+	 		event_manager <- EventManager[0];
+	 	}
+	 	public_transport_graph <- _graph[0];
+	 	
 	 	write "Graphs created in " + (machine_time-t1)/1000.0 + " seconds.";
 	 }
 	 
-	 action init_common_transport {
+	 action init_public_transport {
 	 	create GTFSreader;
 	 }
 	 
@@ -261,8 +261,32 @@ global {
 			//save the starting time for information
 			experiment_init_time <- machine_time;
 		}
-	 	if Person count(each.day_done) = length(Person) {
-	 		write "\n The experiment took: " + (machine_time - experiment_init_time)/1000.0 + " seconds.";
+		//TEST
+//		if cycle = 600 {
+//			list<pair<TransportStop, TransportTrip>> itinerary;
+//			string n1 <- "Peries";
+//			string n2 <- "Crampel";
+//			TransportStop st1;
+//			TransportStop st2;
+//			
+//			loop st over: TransportStop {
+//				if st.real_name = n1 {
+//					st1 <- st;
+//				}else if st.real_name = n2 {
+//					st2 <- st;
+//				}
+//			}
+//			ask public_transport_graph {
+//				itinerary <- get_itinerary_between(st1.location, st2.location);
+//			}
+//			loop elem over: itinerary {
+//				write elem.key.real_name + " via " + elem.value.route_id + " direction " + elem.value.direction_id;
+//			}
+//			do pause;
+//		}
+		//
+	 	if Person count(each.day_done) = length(Person) and empty(TransportTrip) {
+	 		write "\n The experiment took: " + (machine_time - experiment_init_time)/1000.0 + " seconds." color:#green;
 	 		
 	 		//LOGS
 	 		if !empty(Logger) {
@@ -317,6 +341,7 @@ experiment "Display & Graphs" type: gui {
 			species Person;
 			species Car;
 			species Bus;
+			species Metro;
 		}
 		
 //		display "chart_display" {
@@ -407,6 +432,7 @@ experiment "Display only" type: gui {
 			species Person;
 			species Car;
 			species Bus;
+			species Metro;
 		}
 	}
 }

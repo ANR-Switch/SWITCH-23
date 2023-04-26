@@ -8,6 +8,8 @@
 
 model TransportTrip
 
+import "../Vehicles/Metro.gaml"
+
 import "../Vehicles/Bus.gaml"
 
 import "../../World.gaml"
@@ -24,23 +26,41 @@ species TransportTrip skills: [scheduling] schedules: [] {
 	int shape_id;
 	TransportRoute transport_route;
 	
-	bool available <- false;
 	
 	//the itinerary
 	list<TransportStop> stops;
 	list<date> departure_times;
 	
+	list<TransportEdge> my_edges;
+	
 	action schedule_departure_time {
 		assert length(stops) = length(departure_times);
 		if !empty(departure_times) {
+			//register to graph a bit before our departure
+			do later the_action:"register_to_graph" at: departure_times[0] add_minutes -15;
+			
+			//departure!
 			do later the_action:"start_trip" at:departure_times[0];
 		}else{
 			write "TransportTrip: " + route_id + " for " + transport_route.long_name + " has no planned itinerary! It wont start." color:#red;
 		}
 	}
 	
+	action register_to_graph {
+		loop i from:0 to: length(stops) - 2 {
+			create TransportEdge returns: TE {
+				source <- myself.stops[i];
+				target <- myself.stops[i+1];
+				shape <- polyline([source.location, target.location]); //useful?
+				trip <- myself;
+				route_type <- myself.transport_route.type;
+				arrival_date <- myself.departure_times[i+1];
+			}
+			add TE[0] to: my_edges;
+		}
+	}
+	
 	action start_trip {
-		available <- true;
 		switch transport_route.type {
 			match 3 {
 				create Bus {
@@ -50,7 +70,7 @@ species TransportTrip skills: [scheduling] schedules: [] {
 					driving_color <- myself.transport_route.color;
 					do init_vehicle(Person[0]);
 					
-					write get_current_date() + ": " + myself.transport_route.long_name + " starts a trip with: " + name color:#pink;
+					write get_current_date() + ": " + myself.transport_route.long_name + " starts a trip with: " + name color:color;
 					
 					do take_passengers_in;
 					do go_to_next_stop;
@@ -58,15 +78,27 @@ species TransportTrip skills: [scheduling] schedules: [] {
 			}
 			
 			match 1 {
+				create Metro {
+					event_manager <- myself.event_manager;
+					trip <- myself;
+					location <- trip.stops[0].location;
+					color <- myself.transport_route.color;
+//					do init_vehicle(Person[0]);
+					
+					write get_current_date() + ": " + myself.transport_route.long_name + " starts a trip with: " + name color:color;
+					
+					do take_passengers_in;
+					do go_to_next_stop;
+				} 
 				
 			}
 			
 			match 0 {
-				
+				//tram
 			}
 			
 			match 6 {
-				
+				//telepherique
 			}
 			
 			default {
@@ -74,6 +106,13 @@ species TransportTrip skills: [scheduling] schedules: [] {
 			}
 		}
 		
+	}
+	
+	action end_trip {		
+		ask my_edges {
+			do die;
+		}
+		do die;
 	}
 	
 	action add_stop(string departure_str, TransportStop ts){

@@ -36,7 +36,7 @@ species Bus parent: Vehicle schedules: [] {
 		seats <- _seats;	
 	}
 	
-	action go_to_next_stop {
+	action go_to_next_stop {		
 		current_stop_idx <- current_stop_idx + 1;
 		
 		if current_stop_idx < length(trip.stops){
@@ -45,20 +45,23 @@ species Bus parent: Vehicle schedules: [] {
 			my_path <- compute_path_between(location, trip.stops[current_stop_idx].location);
 		
 			if my_path = nil {
-				write get_current_date() + ": " + name + " for: " + trip.transport_route.long_name +" is not able to find a path between " + trip.stops[current_stop_idx-1] + " and " + trip.stops[current_stop_idx] color: #red;
-//				trip.available <- false;
+				//TODO remettre les write
+//				write get_current_date() + ": " + name + " for: " + trip.transport_route.long_name +" is not able to find a path between " + trip.stops[current_stop_idx-1] + " and " + trip.stops[current_stop_idx] color: #red;
+				do go_to_next_stop;
 			}else{
 				if !empty(my_path.edges) {
 					do propose;			
 				}else{
 					//this happens
-					write get_current_date() + ": " + name + " but the path computed is null.";
+//					write get_current_date() + ": " + name + " but the path computed is null.";
+					do go_to_next_stop;
 				}	
 			}
 		}else{
 			//we are in terminus
-			//TODO die
-			trip.available <- false;
+			ask trip {
+				do end_trip;
+			}			
 		}
 	}
 	
