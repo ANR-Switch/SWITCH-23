@@ -31,17 +31,24 @@ species TransportTrip skills: [scheduling] schedules: [] {
 	TransportRoute transport_route;
 	
 	
+	int registration_minutes <- 30 const: true;
+	
 	//the itinerary
 	list<TransportStop> stops;
 	list<date> departure_times;
 	
 	list<TransportEdge> my_edges;
 	
-	action schedule_departure_time {
+	action schedule_departure_time {		
 		assert length(stops) = length(departure_times);
 		if !empty(departure_times) {
-			//register to graph a bit before our departure
-			do later the_action:"register_to_graph" at: departure_times[0] add_minutes -15;
+			//register to graph a bit before our departure fro graph search
+			if get_current_date() < departure_times[0] add_minutes - registration_minutes {
+				do later the_action:"register_to_graph" at: departure_times[0] add_minutes - registration_minutes;
+			}else{
+				do later the_action:"register_to_graph" at: get_current_date() add_seconds 1;
+			}
+			
 			
 			//departure!
 			do later the_action:"start_trip" at:departure_times[0];
@@ -74,7 +81,7 @@ species TransportTrip skills: [scheduling] schedules: [] {
 					driving_color <- myself.transport_route.color;
 					do init_vehicle(Person[0]);
 					
-					write get_current_date() + ": " + myself.transport_route.long_name + " starts a trip with: " + name color:driving_color;
+//					write get_current_date() + ": " + myself.transport_route.long_name + " starts a trip with: " + name color:driving_color;
 					
 					do take_passengers_in;
 					do go_to_next_stop;
@@ -88,7 +95,7 @@ species TransportTrip skills: [scheduling] schedules: [] {
 					location <- trip.stops[0].location;
 					color <- myself.transport_route.color;
 					
-					write get_current_date() + ": " + myself.transport_route.long_name + " starts a trip with: " + name color:color;
+//					write get_current_date() + ": " + myself.transport_route.long_name + " starts a trip with: " + name color:color;
 					
 					do take_passengers_in;
 					do go_to_next_stop;
@@ -102,7 +109,7 @@ species TransportTrip skills: [scheduling] schedules: [] {
 					location <- trip.stops[0].location;
 					color <- myself.transport_route.color;
 					
-					write get_current_date() + ": " + myself.transport_route.long_name + " starts a trip with: " + name color:color;
+//					write get_current_date() + ": " + myself.transport_route.long_name + " starts a trip with: " + name color:color;
 					
 					do take_passengers_in;
 					do go_to_next_stop;
@@ -116,7 +123,7 @@ species TransportTrip skills: [scheduling] schedules: [] {
 					location <- trip.stops[0].location;
 					color <- myself.transport_route.color;
 					
-					write get_current_date() + ": " + myself.transport_route.long_name + " starts a trip with: " + name color:color;
+//					write get_current_date() + ": " + myself.transport_route.long_name + " starts a trip with: " + name color:color;
 					
 					do take_passengers_in;
 					do go_to_next_stop;

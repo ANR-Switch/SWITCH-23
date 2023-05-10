@@ -14,7 +14,7 @@ species Road skills: [scheduling] schedules: [] {
 	int lanes <- 1; //From shapefile 
 	float max_speed <- 50.0 #km/#h; // From shapefile //must be then transformed in m/s
 	string oneway <- "no"; //From shapefile
-	unknown allowed_vehicles;
+	string allowed_vehicles;
 	point trans <- {2.0, 2.0};
 	geometry displayed_shape;
 	rgb color <- #black;
@@ -51,7 +51,7 @@ species Road skills: [scheduling] schedules: [] {
 	init {
 		point A <- first(shape.points);
 		point B <- last(shape.points);
-		if (A = B) {
+		if (A = B) or (B.x = A.x) { //I added the second condition to avoid errors
 			trans <- {0, 0};
 		} else {
 			point u <- {-(B.y - A.y) / (B.x - A.x), 1};
@@ -63,18 +63,38 @@ species Road skills: [scheduling] schedules: [] {
 			}
 
 		}
+		
+		if lanes = nil or lanes = 0 {
+			lanes <- 1;
+		}
+		
 		displayed_shape <- (shape + lanes) translated_by (trans * 2);
 
-		//necessary because the speed of the vehicle is automatically set to m/s
-		float speed <- max_speed/3.6;
-		max_speed <- speed #m/#s;
+		
 		//some security checks
 		if max_capacity < Constants[0].minimum_road_capacity_required {
 			max_capacity <- Constants[0].minimum_road_capacity_required;
 			write name + " defines the minimum max_capacity value." color:#orange;
 		}
 		
+		if max_speed = nil {
+			write name + " dies because of no maxspeed" color:#red;
+			do die;
+		}
+		if allowed_vehicles = nil {
+			write name + " dies because of no allowed vehicles" color:#red;
+			do die;
+		}
+		if max_speed < 5 { //walking speed
+			max_speed <- 5.0;
+		}
+		
 		do allowed_vehicles_init();
+		
+		//todo if the speed in the shapefile is in km/h
+		//necessary because the speed of the vehicle is automatically set to m/s
+		float speed <- max_speed/3.6;
+		max_speed <- speed #m/#s;
 	
 	}
 	

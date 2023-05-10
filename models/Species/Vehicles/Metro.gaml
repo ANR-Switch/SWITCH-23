@@ -5,6 +5,8 @@
 * Tags: 
 */
 
+//This should not be a Person's vehicle as it is a public transport system
+
 model Metro
 
 import "../Transports/TransportTrip.gaml"
@@ -52,7 +54,25 @@ species Metro parent: Vehicle schedules: [] {
 	}
 	
 	action take_passengers_out {
+		PublicTransportCard tc;
+		list<Person> get_out;
+
+		loop p over: passengers {
+			tc <- PublicTransportCard(p.current_vehicle);
+
+			if trip.stops[current_stop_idx].real_name = tc.stops[tc.itinerary_idx + 1].real_name {
+				add p to: get_out;
+			}
+		}
 		
+		loop p over: get_out {
+			remove p from: passengers;
+			
+			tc <- PublicTransportCard(p.current_vehicle);
+			ask tc {
+				do get_out;
+			}
+		}
 	}
 	
 	action take_passengers_in {
@@ -63,6 +83,13 @@ species Metro parent: Vehicle schedules: [] {
 		
 		loop p over: new_passengers {
 			do add_passenger(p);
+			PublicTransportCard(p.current_vehicle).current_public_transport <- self;
+			
+			ask trip.stops[current_stop_idx] {
+				remove PublicTransportCard(p.current_vehicle) from: waiting_persons;
+			}
+		
+			write get_current_date() + ": " + name + " to " + trip.route_id + " takes passenger: " + p.name color:color;
 		}
 	}
 	

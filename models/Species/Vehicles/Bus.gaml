@@ -6,7 +6,7 @@
 */
 
 /*
- * Use this model to add new types of vehicles
+ * This should not be a Person's vehicle as it is a public transport system
  */
 
 model Bus
@@ -46,15 +46,19 @@ species Bus parent: Vehicle schedules: [] {
 		
 			if my_path = nil {
 				//TODO remettre les write
-//				write get_current_date() + ": " + name + " for: " + trip.transport_route.long_name +" is not able to find a path between " + trip.stops[current_stop_idx-1] + " and " + trip.stops[current_stop_idx] color: #red;
-				do go_to_next_stop;
+				//write get_current_date() + ": " + name + " for: " + trip.transport_route.long_name +" is not able to find a path between " + trip.stops[current_stop_idx-1] + " and " + trip.stops[current_stop_idx] color: #red;
+				//do go_to_next_stop;
+				location <- trip.stops[current_stop_idx].location;
+				do arrive_at_destination;
 			}else{
 				if !empty(my_path.edges) {
 					do propose;			
 				}else{
 					//this happens
-//					write get_current_date() + ": " + name + " but the path computed is null.";
-					do go_to_next_stop;
+					//write get_current_date() + ": " + name + " but the path computed is null.";
+//					do go_to_next_stop;
+					location <- trip.stops[current_stop_idx].location;
+					do arrive_at_destination;
 				}	
 			}
 		}else{
@@ -71,7 +75,25 @@ species Bus parent: Vehicle schedules: [] {
 	}
 	
 	action take_passengers_out {
+		PublicTransportCard tc;
+		list<Person> get_out;
+
+		loop p over: passengers {
+			tc <- PublicTransportCard(p.current_vehicle);
+			
+			if trip.stops[current_stop_idx].real_name = tc.stops[tc.itinerary_idx + 1].real_name {
+				add p to: get_out;
+			}
+		}
 		
+		loop p over: get_out {
+			remove p from: passengers;
+			
+			tc <- PublicTransportCard(p.current_vehicle);
+			ask tc {
+				do get_out;
+			}
+		}
 	}
 	
 	action take_passengers_in {
@@ -82,6 +104,13 @@ species Bus parent: Vehicle schedules: [] {
 		
 		loop p over: new_passengers {
 			do add_passenger(p);
+			PublicTransportCard(p.current_vehicle).current_public_transport <- self;
+			
+			ask trip.stops[current_stop_idx] {
+				remove PublicTransportCard(p.current_vehicle) from: waiting_persons;
+			}
+		
+			write get_current_date() + ": " + name + " to " + trip.route_id + " takes passenger: " + p.name color:color;
 		}
 	}
 	
@@ -138,8 +167,9 @@ species Bus parent: Vehicle schedules: [] {
 				assert found warning: true;
 			}	
 		}else{
-			write get_current_date() + ": Something is wrong with " + name + "\n Belonging to " + owner.name color:#orange;
+			//write get_current_date() + ": Something is wrong with " + name color:#orange;
 		}
+		
 		color <- parking_color;
 		current_road <- nil;
 
@@ -148,10 +178,11 @@ species Bus parent: Vehicle schedules: [] {
 	
 		if get_current_date() >= trip.departure_times[current_stop_idx] {
 			do go_to_next_stop;
+//			write name + " is late";
 		}else{
-			do later the_action: "go_to_next_stop" at:trip.departure_times[current_stop_idx];
+			do later the_action: "go_to_next_stop" at: trip.departure_times[current_stop_idx];
+//			write name + " is in advance on schedule.";
 		}
-
 	}
 	
 	aspect default {

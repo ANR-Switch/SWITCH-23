@@ -23,6 +23,9 @@ species TransportEdge schedules: [] {
 	int route_type;
 	
 	aspect default {
+		/*
+		 * not to be used, only for debug
+		 */
 		draw shape color:#cyan;
 	}
 }

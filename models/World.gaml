@@ -26,18 +26,15 @@ import "Utilities/Population_builder.gaml"
 
 global {
 	//FILES
-	string dataset_path <- "../includes/";
-	//output files are in Logger.gaml
+//	string dataset_path <- "../includes/Castanet-Tolosan/CASTANET-TOLOSAN/";
+	string dataset_path <- "../includes/agglo/";
 	
-	shape_file shape_roads_CT <- shape_file(dataset_path + "Castanet-Tolosan/CASTANET-TOLOSAN/road.shp");
-//	shape_file shape_roads_TLS <- shape_file(dataset_path + "Toulouse/filaire-de-voirie.shp");
+	shape_file shape_roads_CT <- shape_file(dataset_path + "roads.shp");
 	
 	//
-	shape_file shape_buildings <- shape_file(dataset_path + "Castanet-Tolosan/CASTANET-TOLOSAN/buildings.shp");
+	shape_file shape_buildings <- shape_file(dataset_path + "buildings.shp");
 	
 	geometry shape <- envelope(shape_roads_CT);
-//	int s <- 1000000;
-//	geometry shape <- envelope(polygon({0,0}, {0, s}, {s, 0}, {s,s}));
 	
 	//SIM	
 	float step <- 60 #seconds parameter: "Step"; //86400 for a day
@@ -49,9 +46,10 @@ global {
 	date sim_starting_date <- date([1970, 1, 1, 0, 0, 0]); //has to start at midnight! for activity.gaml init
 
 	//modality
-	float feet_weight <- 0.2 parameter: "Feet";
+	float feet_weight <- 0.05 parameter: "Feet";
 	float bike_weight <- 0.2 parameter: "Bike";
 	float car_weight <- 0.6 parameter: "Car";
+	float public_transport_weight <- 0.15 parameter: "Public_Transport";
 	//highlight path
 	int Person_idx <- 0 parameter: "Person_idx";
 	int Path_idx <- 0 parameter: "Path_idx";
@@ -201,11 +199,11 @@ global {
 	 	write "Roads...";
 	 	float t1 <- machine_time;
 	 	//car roads
-		create Road from: shape_roads_CT with: [lanes::int(read("nb_lane")), 
-											max_speed::float(read("max_speed")),
-											oneway::string(read("one_way")),
-											id::int(read("id")),
-											allowed_vehicles::unknown(read("vehicles"))
+		create Road from: shape_roads_CT with: [lanes::int(read("NB_VOIES")), 
+											max_speed::float(read("VIT_MOY_VL")),
+											oneway::string(read("SENS")),
+											id::int(read("ID")),
+											allowed_vehicles::string(read("VEHICULES"))
 		];
 
 		write "There are " + length(Road) + " Roads loaded in " + (machine_time-t1)/1000.0 + " seconds.";
@@ -250,10 +248,11 @@ global {
 	 }
 	 
 	 action normalize_modality {
-	 	float sum <- feet_weight + bike_weight + car_weight;
+	 	float sum <- feet_weight + bike_weight + car_weight + public_transport_weight;
 	 	feet_weight <- feet_weight / sum ;
 	 	bike_weight <- bike_weight / sum ;
 	 	car_weight <- car_weight / sum ;
+	 	public_transport_weight <- public_transport_weight / sum;
 	 }
 	 
 	 reflex { 
@@ -262,28 +261,30 @@ global {
 			experiment_init_time <- machine_time;
 		}
 		//TEST
-//		if cycle = 600 {
-//			list<pair<TransportStop, TransportTrip>> itinerary;
-//			string n1 <- "Peries";
-//			string n2 <- "Crampel";
-//			TransportStop st1;
-//			TransportStop st2;
-//			
-//			loop st over: TransportStop {
-//				if st.real_name = n1 {
-//					st1 <- st;
-//				}else if st.real_name = n2 {
-//					st2 <- st;
-//				}
-//			}
-//			ask public_transport_graph {
-//				itinerary <- get_itinerary_between(st1.location, st2.location);
-//			}
-//			loop elem over: itinerary {
-//				write elem.key.real_name + " via " + elem.value.route_id + " direction " + elem.value.direction_id;
-//			}
-//			do pause;
-//		}
+		/*if cycle = 350 {
+			list<pair<TransportStop, TransportTrip>> itinerary;
+			string n1 <- "Peries";
+			string n2 <- "Crampel";
+			TransportStop st1;
+			TransportStop st2;
+			
+			loop st over: TransportStop {
+				if st.real_name = n1 {
+					st1 <- st;
+				}else if st.real_name = n2 {
+					st2 <- st;
+				}
+			}
+
+			ask public_transport_graph {
+				itinerary <- get_itinerary_between(st1.location, st2.location);
+			}
+			
+			loop elem over: itinerary {
+				write elem.key.real_name + " via " + elem.value.route_id + " direction " + elem.value.direction_id;
+			}
+			do pause;
+		}*/
 		//
 	 	if Person count(each.day_done) = length(Person) and empty(TransportTrip) {
 	 		write "\n The experiment took: " + (machine_time - experiment_init_time)/1000.0 + " seconds." color:#green;
@@ -314,6 +315,7 @@ experiment "Display & Graphs" type: gui {
 	parameter "Pedestrians" var: feet_weight category: "modality" min:0.0;
 	parameter "Bikes" var: bike_weight category: "modality" min:0.0;
 	parameter "Cars" var: car_weight category: "modality" min:0.0;
+	parameter "Public_Transport" var: public_transport_weight category: "modality" min:0.0;
 	
 	/*
 	 * Interactive commands
@@ -407,6 +409,7 @@ experiment "Display only" type: gui {
 	parameter "Pedestrians" var: feet_weight category: "modality" min:0.0;
 	parameter "Bikes" var: bike_weight category: "modality" min:0.0;
 	parameter "Cars" var: car_weight category: "modality" min:0.0;
+	parameter "Public_Transport" var: public_transport_weight category: "modality" min:0.0;
 	
 	/*
 	 * Interactive commands
@@ -426,10 +429,10 @@ experiment "Display only" type: gui {
 	 */
 	output {
 		display main_window type: opengl {
-			species Road;
-			species TransportStop;
-			species TransportEdge;
-			species Building;
+			species TransportStop refresh:false;
+			species TransportRoute refresh:false;
+			//species Building refresh:false;
+			species Road refresh:false;
 			species Person;
 			species Car;
 			species Bus;

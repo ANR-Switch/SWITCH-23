@@ -8,6 +8,8 @@
 
 model Person
 
+import "Vehicles/PublicTransportCard.gaml"
+
 import "../Logs/Journal.gaml"
 
 import "../Utilities/Constants.gaml"
@@ -55,11 +57,15 @@ species Person skills: [scheduling] schedules: [] {
 	rgb color <- #black;
 	Vehicle current_vehicle;
 	list<Vehicle> vehicles <- [];
+	Feet my_feet;
 	
 	//output display
 	bool is_moving_chart <- false; //used for display
 	
 	init {
+		create Feet returns: f;
+	  	my_feet <- f[0];
+		//
 		create Journal returns: j {
 			owner <- myself;
 		}
@@ -340,11 +346,10 @@ species Person skills: [scheduling] schedules: [] {
     
     action choose_vehicles {
     	//this method is called at initialisation in order to select the persons' vehicles in a preference order
-    	int choice <- rnd_choice([feet_weight, bike_weight, car_weight]);
+    	int choice <- rnd_choice([feet_weight, bike_weight, car_weight, public_transport_weight]);
     	switch int(choice) {
     		match 0 {
-    			create Feet returns: f;
-	    	  	ask f {
+	    	  	ask my_feet {
 	    	  		do init_vehicle(myself);
 	    	  	}
 	    	  	if flip(0.5) {
@@ -369,15 +374,15 @@ species Person skills: [scheduling] schedules: [] {
 		    	  	ask c {
 		    	  		do init_vehicle(myself);
 		    	  	}
-		    	  	create Feet returns: f;
-		    	  	ask f {
-		    	  		do init_vehicle(myself);
-		    	  	}
+//		    	  	create Feet returns: f;
+//		    	  	ask f {
+//		    	  		do init_vehicle(myself);
+//		    	  	}
 	    	  	}else{
-	    	  		create Feet returns: f;
-		    	  	ask f {
-		    	  		do init_vehicle(myself);
-		    	  	}
+//	    	  		create Feet returns: f;
+//		    	  	ask f {
+//		    	  		do init_vehicle(myself);
+//		    	  	}
 	    	  	}
     		}
     		match 2 {
@@ -386,19 +391,40 @@ species Person skills: [scheduling] schedules: [] {
 	    	  		do init_vehicle(myself);
 	    	  	}
 	    	  	if flip(0.5) {
-	    	  		create Feet returns: f;
-		    	  	ask f {
-		    	  		do init_vehicle(myself);
-		    	  	}
+//	    	  		create Feet returns: f;
+//		    	  	ask f {
+//		    	  		do init_vehicle(myself);
+//		    	  	}
 	    	  	}else{
 	    	  		create Bike returns: b;
 		    	  	ask b {
 		    	  		do init_vehicle(myself);
 		    	  	}
-		    	  	create Feet returns: f;
-		    	  	ask f {
+//		    	  	create Feet returns: f;
+//		    	  	ask f {
+//		    	  		do init_vehicle(myself);
+//		    	  	}
+	    	  	}
+    		}
+    		match 3 {
+    			create PublicTransportCard returns: c;
+	    	  	ask c {
+	    	  		do init_vehicle(myself);
+	    	  	}
+	    	  	if flip(0.5) {
+//	    	  		create Feet returns: f;
+//		    	  	ask f {
+//		    	  		do init_vehicle(myself);
+//		    	  	}
+	    	  	}else{
+	    	  		create Bike returns: b;
+		    	  	ask b {
 		    	  		do init_vehicle(myself);
 		    	  	}
+//		    	  	create Feet returns: f;
+//		    	  	ask f {
+//		    	  		do init_vehicle(myself);
+//		    	  	}
 	    	  	}
     		}
     		default {
