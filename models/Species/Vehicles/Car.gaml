@@ -21,7 +21,7 @@ species Car parent: Vehicle schedules: [] {
 		color <- parking_color;
 	}
 	
-	action init_vehicle(Person _owner, float _length<-4.0#meter, float _speed<-130#km/#h, int _seats<-4){
+	action init_vehicle(Person _owner, float _length<-Constants[0].car_size #meter, float _speed<-130#km/#h, int _seats<-4){
 		owner <- _owner;
 //		do add_passenger(owner);
 		length <- _length;
@@ -52,6 +52,7 @@ species Car parent: Vehicle schedules: [] {
 //			float t1 <- machine_time;
 			my_path <- compute_path_between(location, my_destination);
 //			write "time : >>> " + (machine_time - t1) + " milliseconds" color: #green;
+
 			if my_path = nil {
 				write get_current_date() + ": " + name + " belonging to: " + owner.name +" is not able to find a path between " + owner.current_building + " and " + owner.next_building color: #red;
 				write "The motion will not be done. \n The activity: " + owner.current_activity.title + " of: " + owner.name + " might be done in the wrong location." color: #orange;

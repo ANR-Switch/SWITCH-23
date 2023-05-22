@@ -72,11 +72,6 @@ species Road skills: [scheduling] schedules: [] {
 
 		
 		//some security checks
-		if max_capacity < Constants[0].minimum_road_capacity_required {
-			max_capacity <- Constants[0].minimum_road_capacity_required;
-			write name + " defines the minimum max_capacity value." color:#orange;
-		}
-		
 		if max_speed = nil {
 			write name + " dies because of no maxspeed" color:#red;
 			do die;
@@ -84,12 +79,20 @@ species Road skills: [scheduling] schedules: [] {
 		if allowed_vehicles = nil {
 			write name + " dies because of no allowed vehicles" color:#red;
 			do die;
+		}else{
+			do allowed_vehicles_init();
 		}
 		if max_speed < 5 { //walking speed
 			max_speed <- 5.0;
 		}
+		if max_capacity < 1 {
+			max_capacity <- 1.0;
+		}
+		if max_capacity < Constants[0].minimum_road_capacity_required and car_track {
+			max_capacity <- Constants[0].minimum_road_capacity_required;
+			write name + " defines the minimum max_capacity value." color:#orange;
+		}
 		
-		do allowed_vehicles_init();
 		
 		//todo if the speed in the shapefile is in km/h
 		//necessary because the speed of the vehicle is automatically set to m/s
@@ -176,17 +179,32 @@ species Road skills: [scheduling] schedules: [] {
 	
 	action propose(Vehicle vehicle){
 		//this method is called by a source road (vehicle.current_road) to a target road
-		if !empty(vehicle.my_path.edges) {
-			Road next_road <- Road(vehicle.my_path.edges[0]);
-			ask next_road {
-				do treat_proposition(vehicle);
+		/*if species(vehicle) = Bus {
+			Bus b <- Bus(vehicle);
+			if !empty(b.my_roads) {
+				Road next_road <- b.my_roads[0];
+				ask next_road {
+					do treat_proposition(vehicle);
+				}
+			}else{
+				//end of action
+				ask vehicle {
+					do arrive_at_destination;
+				}
 			}
-		}else{
-			//end of action
-			ask vehicle {
-				do arrive_at_destination;
-			}
-		}
+		}else{*/
+			if !empty(vehicle.my_path.edges) {
+				Road next_road <- Road(vehicle.my_path.edges[0]);
+				ask next_road {
+					do treat_proposition(vehicle);
+				}
+			}else{
+				//end of action
+				ask vehicle {
+					do arrive_at_destination;
+				}
+			}	
+		//}
 	}
 	
 	action treat_proposition(Vehicle vehicle){

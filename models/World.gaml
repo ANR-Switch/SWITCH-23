@@ -235,6 +235,9 @@ global {
 	 	write "Cars can use " + length(road_subset) + " road segments.";
 	 	
 	 	//Public transports
+	 	ask GTFSreader[0] {
+	 		do assign_shapes;
+	 	}
 	 	create TransportGraph returns: _graph {
 	 		event_manager <- EventManager[0];
 	 	}
@@ -336,10 +339,10 @@ experiment "Display & Graphs" type: gui {
 	 */
 	output {
 		display main_window type: opengl {
-			species Road;
-			species TransportStop;
-			species TransportRoute;
-			species Building;
+			species Road refresh:false;
+			species TransportStop refresh:false;
+			species TransportRoute refresh:false;
+			//species Building refresh:false;
 			species Person;
 			species Car;
 			species Bus;
@@ -362,6 +365,7 @@ experiment "Display & Graphs" type: gui {
         
         display "Part modales" {
         	chart "Parts modales" type: pie {
+        		data "PublicTransport" value: Person count(each.is_moving_chart and species(each.current_vehicle)=PublicTransportCard) color: #pink;
         		data "Cars" value: Person count(each.is_moving_chart and species(each.current_vehicle)=Car) color: #yellow;
         		data "Bikes" value: Person count(each.is_moving_chart and species(each.current_vehicle)= Bike) color: #limegreen;
         		data "Pedestrians" value: Person count(each.is_moving_chart and species(each.current_vehicle)= Feet) color: #darkgoldenrod;

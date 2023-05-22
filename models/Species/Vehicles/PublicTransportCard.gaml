@@ -21,6 +21,9 @@ species PublicTransportCard parent: Vehicle schedules: [] {
 	list<int> directions;
 	int itinerary_idx <- 0;
 	Vehicle current_public_transport;
+	
+	//debug
+	list<string> journal;
 //	init {
 //		color <- #darkgoldenrod;
 //	}
@@ -82,12 +85,21 @@ species PublicTransportCard parent: Vehicle schedules: [] {
 		}
 	}
 	
-	action get_out {
+	action get_in(Vehicle v) {
+		current_public_transport <- v;
 		itinerary_idx <- itinerary_idx + 1;
+		
+		string s;
+		s <- get_current_date() + ": got in " + v.name + " " + Bus(v).route ;
+		add s to: journal;
+	}
+	
+	action get_out {		
 		owner.color <- #black;
 		current_public_transport <- nil;
+		add get_current_date() + ": got out." to: journal;
 		
-		if length(stops) - 1 = itinerary_idx {
+		if length(stops) = itinerary_idx {
 			write owner.name + " arrived through public transport";
 			do walk_to(my_destination);		
 			ask owner {

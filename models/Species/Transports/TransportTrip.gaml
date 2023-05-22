@@ -30,6 +30,9 @@ species TransportTrip skills: [scheduling] schedules: [] {
 	int shape_id;
 	TransportRoute transport_route;
 	
+	//only useful for bus
+	list<list<Road>> bus_path;
+	
 	
 	int registration_minutes <- 30 const: true;
 	
@@ -62,7 +65,7 @@ species TransportTrip skills: [scheduling] schedules: [] {
 			create TransportEdge returns: TE {
 				source <- myself.stops[i];
 				target <- myself.stops[i+1];
-				shape <- polyline([source.location, target.location]); //useful?
+				shape <- polyline([source.location, target.location]); //useful for directed graph?
 				trip <- myself;
 				route_type <- myself.transport_route.type;
 				arrival_date <- myself.departure_times[i+1];
@@ -79,10 +82,10 @@ species TransportTrip skills: [scheduling] schedules: [] {
 					trip <- myself;
 					location <- trip.stops[0].location;
 					driving_color <- myself.transport_route.color;
+					route <- myself.transport_route.long_name;
+					
 					do init_vehicle(Person[0]);
-					
-//					write get_current_date() + ": " + myself.transport_route.long_name + " starts a trip with: " + name color:driving_color;
-					
+										
 					do take_passengers_in;
 					do go_to_next_stop;
 				} 

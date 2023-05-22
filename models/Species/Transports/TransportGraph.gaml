@@ -63,42 +63,45 @@ species TransportGraph skills: [scheduling] schedules: [] {
 		
 		p <- path_between(public_transport_graph, _s, _t);
 		
-		//transform to an easier-to-read list 
-		string current_edge_route_id;
-		loop _elem over: p.edges {
-			if TransportEdge(_elem).connection {
-				//add connection
-//				add TransportEdge(_elem).source::nil to: itinerary;
-			}else if TransportEdge(_elem).trip.route_id != current_edge_route_id {
-				add  TransportEdge(_elem).source::TransportEdge(_elem).trip to: itinerary;
-				current_edge_route_id <- TransportEdge(_elem).trip.route_id;
+		if p != nil and !empty(p.edges) {
+			//transform to an easier-to-read list 
+			string current_edge_route_id;
+			loop _elem over: p.edges {
+				if TransportEdge(_elem).connection {
+					//ignore
+				}else if TransportEdge(_elem).trip.route_id != current_edge_route_id {
+					add  TransportEdge(_elem).source::TransportEdge(_elem).trip to: itinerary;
+					current_edge_route_id <- TransportEdge(_elem).trip.route_id;
+				}
 			}
-		}
-		add TransportEdge(last(p.edges)).target::nil to: itinerary;
-		
-		//clean to reduce unecessary connections
-		if length(itinerary) > 1 {
-			list<int> idx_to_delete;
-			loop i from:0 to: length(itinerary)-2 {
-				loop j from:i+1 to: length(itinerary)-1 {
-					if itinerary[i].value != nil and itinerary[j].value != nil and  itinerary[i].value.route_id = itinerary[j].value.route_id {
-						loop k from: i+1 to:j {
-							if !(idx_to_delete contains k){
-								add k to: idx_to_delete;
+			add TransportEdge(last(p.edges)).target::nil to: itinerary;
+			
+			//clean to reduce unecessary connections
+			if length(itinerary) > 1 {
+				list<int> idx_to_delete;
+				loop i from:0 to: length(itinerary)-2 {
+					loop j from:i+1 to: length(itinerary)-1 {
+						if itinerary[i].value != nil and itinerary[j].value != nil and  itinerary[i].value.route_id = itinerary[j].value.route_id {
+							loop k from: i+1 to:j {
+								if !(idx_to_delete contains k){
+									add k to: idx_to_delete;
+								}
 							}
 						}
+					}	
+				}
+				//
+				if !empty(idx_to_delete){
+					loop i from: 0 to: length(idx_to_delete) - 1 {
+						remove index: (idx_to_delete[i] - i) from: itinerary;	
 					}
 				}	
 			}
-			//
-			if !empty(idx_to_delete){
-				loop i from: 0 to: length(idx_to_delete) - 1 {
-					remove index: (idx_to_delete[i] - i) from: itinerary;	
-				}
-			}	
+			
+			return itinerary;	
+		}else{
+			return nil;
 		}
-		
-		return itinerary;
 	}
 	
 	

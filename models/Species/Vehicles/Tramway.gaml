@@ -42,6 +42,18 @@ species Tramway parent: Vehicle schedules: [] {
 			do later the_action: "arrive_at_destination" at: trip.departure_times[current_stop_idx];
 		}else{
 			//we are in terminus
+			//
+			if !empty(passengers) {
+				write get_current_date() +  ": " + name + " has some passengers still inside even though we are in terminus! :" color:#red;
+				PublicTransportCard tc;
+				loop p over: passengers {
+					tc <- PublicTransportCard(p.current_vehicle);
+					write tc.name;
+					ask tc {
+						do get_out;
+					}
+				}
+			}
 			ask trip {
 				do end_trip;
 			}
@@ -60,7 +72,7 @@ species Tramway parent: Vehicle schedules: [] {
 		loop p over: passengers {
 			tc <- PublicTransportCard(p.current_vehicle);
 
-			if trip.stops[current_stop_idx].real_name = tc.stops[tc.itinerary_idx + 1].real_name {
+			if trip.stops[current_stop_idx].real_name = tc.stops[tc.itinerary_idx].real_name {
 				add p to: get_out;
 			}
 		}
@@ -76,20 +88,24 @@ species Tramway parent: Vehicle schedules: [] {
 	}
 	
 	action take_passengers_in {
+		PublicTransportCard tc;
 		list<Person> new_passengers;
 		ask trip.stops[current_stop_idx] {
 			new_passengers <- get_waiting_persons(myself);
 		}
 		
 		loop p over: new_passengers {
+			tc <- PublicTransportCard(p.current_vehicle);
+			ask tc {
+				do get_in(myself);
+			}
 			do add_passenger(p);
-			PublicTransportCard(p.current_vehicle).current_public_transport <- self;
 			
 			ask trip.stops[current_stop_idx] {
 				remove PublicTransportCard(p.current_vehicle) from: waiting_persons;
 			}
 		
-			write get_current_date() + ": " + name + " to " + trip.route_id + " takes passenger: " + p.name color:color;
+			write get_current_date() + ": " + name + " to " + trip.route_id + " takes passenger: " + p.name ;
 		}
 	}
 	
