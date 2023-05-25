@@ -46,8 +46,7 @@ species Bike parent: Vehicle schedules: [] {
 //			write "time : >>> " + (machine_time - t1) + " milliseconds" color: #green;
 			if my_path = nil {
 				write get_current_date() + ": " + name + " belonging to: " + owner.name +" is not able to find a path between " + owner.current_building + " and " + owner.next_building color: #red;
-				write "The motion will not be done. \n The activity: " + owner.current_activity.title + " of: " + owner.name + " might be done in the wrong location." color: #orange;
-				owner.location <- any_location_in(owner.current_activity.activity_location);
+				owner.location <- owner.current_destination;
 				ask owner {
 					do end_motion;
 				}

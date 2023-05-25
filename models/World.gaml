@@ -22,7 +22,7 @@ import "Species/Map/Road.gaml"
 
 import "Species/Map/Building.gaml"
 
-import "Utilities/Population_builder.gaml"
+//import "Utilities/Population_builder.gaml"
 
 global {
 	//FILES
@@ -31,10 +31,11 @@ global {
 	
 	shape_file shape_roads_CT <- shape_file(dataset_path + "roads.shp");
 	
-	//
 	shape_file shape_buildings <- shape_file(dataset_path + "buildings.shp");
 	
 	geometry shape <- envelope(shape_roads_CT);
+	
+	csv_file population <- csv_file("../includes/population/population_test.csv", ",", true);
 	
 	//SIM	
 	float step <- 60 #seconds parameter: "Step"; //86400 for a day
@@ -42,14 +43,14 @@ global {
 	float experiment_init_time;
 	
 	//general paramters	 
-	date starting_date <- date([1970, 1, 1, 0, 0, 0]);
-	date sim_starting_date <- date([1970, 1, 1, 0, 0, 0]); //has to start at midnight! for activity.gaml init
+	date starting_date <- date([1970, 1, 1, 4, 40, 0]);
+	//date sim_starting_date <- date([1970, 1, 1, 0, 0, 0]); //has to start at midnight! for activity.gaml init
 
 	//modality
-	float feet_weight <- 0.05 parameter: "Feet";
-	float bike_weight <- 0.2 parameter: "Bike";
-	float car_weight <- 0.6 parameter: "Car";
-	float public_transport_weight <- 0.15 parameter: "Public_Transport";
+	float feet_weight <- 0.0 parameter: "Feet";
+	float bike_weight <- 0.0 parameter: "Bike";
+	float car_weight <- 0.0 parameter: "Car";
+	float public_transport_weight <- 0.1 parameter: "Public_Transport";
 	//highlight path
 	int Person_idx <- 0 parameter: "Person_idx";
 	int Path_idx <- 0 parameter: "Path_idx";
@@ -82,18 +83,15 @@ global {
 		//init
 		do init_event_managers; //good to do first
 		do init_buildings;
-	 	do init_roads;
+	 	//do init_roads;
 	 	do init_public_transport;
 	 	
 	 	do init_graphs; //should be done after roads and public transports
 	 	
-	 	do init_persons;
+	 	do init_persons_csv;
 	 	
 	 	//linkage
-	 	do link_persons_to_event_manager(EventManager[0]);
-	 	do link_roads_to_event_manager(EventManager[0]);
-	 	//final init statement
-	 	do register_all_first_activities;
+	 	//do link_roads_to_event_manager(EventManager[0]); done in init_roads
 		
 		//logger should be created after the other species
 		if Constants[0].log_journals or Constants[0].log_roads or Constants[0].log_traffic {
@@ -104,52 +102,78 @@ global {
 		write "Simulation is ready. In " + (machine_time - sim_init_time)/1000.0 + " seconds." ;
 	}
 	
-	action register_all_first_activities {
-		loop ppl over: Person {
-			assert ppl.event_manager != nil;
-			ask ppl {
-				do register_first_activity;
-			}
-		}
-	}	
+
 	
-	action link_persons_to_event_manager(EventManager e){
-		//to be used only if the agents possess the scheduling skill
-		loop p over: Person {
-			ask p {
-				do link_event_manager(e);
-			}
-		}
-	}
-	
-	action link_roads_to_event_manager(EventManager e){
-		//to be used only if the agents possess the scheduling skill
-		loop r over: Road {
-			r.event_manager <- e;
-		}
-	}
+//	action link_roads_to_event_manager(EventManager e){
+//		//to be used only if the agents possess the scheduling skill
+//		loop r over: Road {
+//			r.event_manager <- e;
+//		}
+//	}
 	
 	action init_event_managers{
 		create EventManager number: nb_event_managers;
 	}
 	
-	action init_persons {
+//	action init_persons {
+//		//create the persons
+//		write "Persons...";
+//		float t1 <- machine_time;
+//		create Population_builder {
+//			sim_starting_date <- myself.sim_starting_date;
+//			working_buildings <- myself.working_buildings;
+//			living_buildings <- myself.living_buildings;
+//			do initialize_population;
+//		}
+//		write "There are " + length(Person) + " Persons loaded in " + (machine_time-t1)/1000.0 + " seconds.";
+//	}
+	
+	action init_persons_csv {
 		//create the persons
 		write "Persons...";
 		float t1 <- machine_time;
-		create Population_builder {
-			sim_starting_date <- myself.sim_starting_date;
-			working_buildings <- myself.working_buildings;
-			living_buildings <- myself.living_buildings;
-			do initialize_population;
-		}
+		
+		create Person from: population with: [
+			/*first_name::read("nom"),
+			age::int(read("age")),
+			genre::read("genre"),
+			professional_activity::int(read("activite_pro")),
+			income::int(read("revenu")),
+			study_level::int(read("etudes"))*/
+			activities::init_read_activities(read("activities")),
+			starting_dates::init_read_dates(string(read("depart")))
+		]{		
+			event_manager <- EventManager[0];
+				
+			
+//			//buildings
+			living_building <- select_building(living_buildings);
+			location <- any_location_in(living_building);
+			current_building <- living_building;
+			working_building <- select_building(working_buildings);
+			//exterior_working_building <- select_building(exterior_working_buildings);
+			studying_building <- select_building(studying_buildings);
+			commercial_building <- select_building(commercial_buildings);
+			leasure_building <- select_building(leasure_buildings);
+//			
+//			//vehicle
+			do choose_vehicles;
+//			pasbesoin do link_event_manager(EventManager[0]); //after choose vehicle
+//			//activities
+			do register_activities; //after link to eventmanager
+
+			//write name + " created.";
+		}		
 		write "There are " + length(Person) + " Persons loaded in " + (machine_time-t1)/1000.0 + " seconds.";
 	}
 	
 	action init_buildings {
 	 	write "Buildings...";
 	 	float t1 <- machine_time;
-		create Building from: shape_buildings with: [type::int(read("type"))]{
+		create Building from: shape_buildings with: [
+			type::int(read("type")),
+			real_name::read("name")
+		]{
 			switch int(type) {
 				match 0 {
 					color <- #gray;				
@@ -175,10 +199,6 @@ global {
 					color <- #green;				
 					add self to: myself.leasure_buildings;
 				}
-				match 6 {
-					color <- #purple;
-					add self to: myself.exterior_working_buildings; //exterior attraction zones
-				}
 				default {
 					color <- #yellow;
 				}	
@@ -191,22 +211,41 @@ global {
 		write "Commercial buildings: " + length(commercial_buildings) ;
 		write "Administrative buildings: " + length(administrative_buildings) ;
 		write "Leasure buildings: " + length(leasure_buildings) ;
-		write "Exterior working buildings: " + length(exterior_working_buildings) ;
 		
 	 }
 	 
 	 action init_roads {
 	 	write "Roads...";
+	 	bool doubling <- true; //double roads for directed graph
 	 	float t1 <- machine_time;
 	 	//car roads
 		create Road from: shape_roads_CT with: [lanes::int(read("NB_VOIES")), 
 											max_speed::float(read("VIT_MOY_VL")),
 											oneway::string(read("SENS")),
 											id::int(read("ID")),
-											allowed_vehicles::string(read("VEHICULES"))
-		];
-
+											allowed_vehicles::string(read("VEHICULES")),
+											event_manager::EventManager[0]
+		] {
+			if doubling {
+				//double
+				if oneway = "Double sens" {	
+					create Road with: [
+						lanes::self.lanes,
+						max_speed::self.max_speed,
+						oneway::self.oneway,
+						id::self.id,
+						allowed_vehicles::self.allowed_vehicles,
+						event_manager::EventManager[0],
+						shape::polyline(reverse(self.shape.points))
+					];	
+				}
+			}
+			if oneway = "Sens inverse" {				
+				shape <- polyline(reverse(shape.points));
+			}
+		}
 		write "There are " + length(Road) + " Roads loaded in " + (machine_time-t1)/1000.0 + " seconds.";
+		write "" + length(Road where each.had_to_increase_capacity) + " roads had to increase their maximum capacity.";
 	 }
 	 
 	 action init_graphs {
@@ -257,6 +296,30 @@ global {
 	 	car_weight <- car_weight / sum ;
 	 	public_transport_weight <- public_transport_weight / sum;
 	 }
+	
+
+	list<int> init_read_activities(string s) {
+		list<int> r_list;
+		int act;
+		
+		loop e over: split_with(s, ";") {
+			add int(e) div 10 to: r_list;
+		}
+    	 return r_list;
+    }
+    
+    list<date> init_read_dates(string s) {
+		list<date> r_list;
+    	list<string> l1 <- split_with(replace(s, "'", ""), ";");
+    	list<string> l2;
+    	
+    	loop e over: l1 {
+    		l2 <- split_with(e, ":");
+
+    		add date(starting_date.year, starting_date.month, starting_date.day, int(l2[0]), int(l2[1]), 0) to: r_list;
+    	}
+    	return r_list;
+    }
 	 
 	 reflex { 
 		if cycle = 0 {
@@ -300,10 +363,9 @@ global {
 		 		}	
 		 	}
 	 		
-	 		//just to know:
-			write "\n " + Person count(each.is_going_in_ext_zone) + " persons went out of the simulated city to work.";
 	 		do pause;
 	 	}
+	 	
 	 }
 
 }
@@ -372,7 +434,7 @@ experiment "Display & Graphs" type: gui {
         	}        	
         }
         
-		display "Activities" {
+		/*display "Activities" {
         	chart "Activities" type: pie {
         		data "Travail" value: Person count(each.current_activity.title = "Travail") color: #blue;
         		data "Course" value: Person count(each.current_activity.title = "Course") color: #red;
@@ -383,7 +445,7 @@ experiment "Display & Graphs" type: gui {
 				data "accompagnement" value: Person count(each.current_activity.title = "accompagnement") color: #cyan;
         		data "retour maison" value: Person count(each.current_activity.title = "retour maison") color: #grey;
         	}        	
-        }
+        }*/
         
         display "road" {
         	chart "Jammed roads" x_tick_unit: 10 x_serie_labels: (""+current_date.hour+"h"+current_date.minute) type: series {
@@ -437,12 +499,14 @@ experiment "Display only" type: gui {
 			species TransportRoute refresh:false;
 			//species Building refresh:false;
 			species Road refresh:false;
+			//species TransportEdge;
 			species Person;
 			species Car;
 			species Bus;
 			species Metro;
 			species Tramway;
 			species Teleo;
+			overlay right: "Date: " + current_date  color: #orange;
 		}
 	}
 }

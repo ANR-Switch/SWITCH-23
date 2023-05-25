@@ -47,6 +47,7 @@ species Road skills: [scheduling] schedules: [] {
 	//output display
 	bool is_jammed <- false;
 	bool is_highlight <- false;
+	bool had_to_increase_capacity <- false;
 
 	init {
 		point A <- first(shape.points);
@@ -90,7 +91,8 @@ species Road skills: [scheduling] schedules: [] {
 		}
 		if max_capacity < Constants[0].minimum_road_capacity_required and car_track {
 			max_capacity <- Constants[0].minimum_road_capacity_required;
-			write name + " defines the minimum max_capacity value." color:#orange;
+			had_to_increase_capacity <- true;
+			//write name + " defines the minimum max_capacity value." color:#orange;
 		}
 		
 		

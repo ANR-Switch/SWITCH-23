@@ -11,6 +11,7 @@ model Building
 species Building schedules: [] {
 	int type;
 	rgb color;
+	string real_name;
 
 	aspect default {
 		draw shape color: color border: #black;			

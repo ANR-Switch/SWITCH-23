@@ -18,9 +18,18 @@ species TransportEdge schedules: [] {
 	TransportStop target;
 	TransportTrip trip;
 	bool connection <- false;
-	date arrival_date;
+	float connection_weight <- Constants[0].connection_weight;
+	date target_arrival_date;
+	date source_arrival_date;
+	float weight;
 	
 	int route_type;
+	
+//	action compute_weight {
+//		if !connection {
+//			weight <- distance_to(source.location, target.location);
+//		}
+//	}
 	
 	aspect default {
 		/*

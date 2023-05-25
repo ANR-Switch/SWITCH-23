@@ -17,7 +17,7 @@ species Journal schedules: [] {
 	action write_in_journal(int _idx, string _vehicle_name, string _road, int _road_length, date _entry_date, date _leave_date, float _mean_speed, int _lateness) {
 		create LoggedRoadEvent returns: event {
 			trip_idx <- _idx;
-			activity_name <- myself.owner.personal_agenda.activities[_idx].title;
+			//activity_name <- myself.owner.personal_agenda.activities[_idx].title;
 			vehicle <- _vehicle_name;
 			road <- _road;
 			road_length <- _road_length;

@@ -13,6 +13,7 @@ import "TransportTrip.gaml"
 species TransportGraph skills: [scheduling] schedules: [] {
 	graph public_transport_graph;
 	map<TransportEdge, float> weights;
+	date last_update <- starting_date;
 	
 	init {
 		write "Init of the public transport graph...";
@@ -30,12 +31,14 @@ species TransportGraph skills: [scheduling] schedules: [] {
 		 					target <- st2;
 		 					shape <- polyline([source.location, target.location]);
 		 					connection <- true; //important!
+		 					weight <- Constants[0].connection_weight;
 		 				}
 		 				create TransportEdge {
 		 					source <- st2;
 		 					target <- st1;
 		 					shape <- polyline([source.location, target.location]);
 		 					connection <- true; //important!
+		 					weight <- Constants[0].connection_weight;
 		 				}
 		 			}
 		 		}	
@@ -50,16 +53,18 @@ species TransportGraph skills: [scheduling] schedules: [] {
 		path p;
 		list<pair<TransportStop, TransportTrip>> itinerary;
 		date d <- get_current_date();
-		list<TransportEdge> available_edges <- TransportEdge where(each.connection = false and each.arrival_date >= d);
-		list<TransportEdge> connections <- TransportEdge where(each.connection);
 		
-		ask connections {
-			arrival_date <- d;		
+		//update graph
+		if d > last_update {
+			list<TransportEdge> available_edges <- TransportEdge where(each.connection = false and each.source_arrival_date > d);
+			list<TransportEdge> connections <- TransportEdge where(each.connection);
+			
+			weights <- (connections + available_edges) as_map(each::(each.weight));
+			public_transport_graph <- as_edge_graph(weights.keys) with_weights weights;
+			public_transport_graph <- directed(public_transport_graph);
+			
+			last_update <- d;	
 		}
-		
-		weights <- (connections + available_edges) as_map(each::(each.arrival_date-d));
-		public_transport_graph <- as_edge_graph(TransportEdge) with_weights weights;
-		public_transport_graph <- directed(public_transport_graph);
 		
 		p <- path_between(public_transport_graph, _s, _t);
 		
@@ -77,6 +82,7 @@ species TransportGraph skills: [scheduling] schedules: [] {
 			add TransportEdge(last(p.edges)).target::nil to: itinerary;
 			
 			//clean to reduce unecessary connections
+			/*
 			if length(itinerary) > 1 {
 				list<int> idx_to_delete;
 				loop i from:0 to: length(itinerary)-2 {
@@ -97,6 +103,7 @@ species TransportGraph skills: [scheduling] schedules: [] {
 					}
 				}	
 			}
+			*/
 			
 			return itinerary;	
 		}else{

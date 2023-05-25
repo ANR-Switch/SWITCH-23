@@ -78,7 +78,7 @@ species Metro parent: Vehicle schedules: [] {
 		}
 		
 		loop p over: get_out {
-			remove p from: passengers;
+			//remove p from: passengers;
 			
 			tc <- PublicTransportCard(p.current_vehicle);
 			ask tc {
@@ -99,7 +99,7 @@ species Metro parent: Vehicle schedules: [] {
 			ask tc {
 				do get_in(myself);
 			}
-			do add_passenger(p);
+			//do add_passenger(p);
 			
 			ask trip.stops[current_stop_idx] {
 				remove PublicTransportCard(p.current_vehicle) from: waiting_persons;
@@ -124,7 +124,7 @@ species Metro parent: Vehicle schedules: [] {
 	}
 	
 	action arrive_at_destination {		
-		location <- trip.stops[current_stop_idx].location;
+		do move_to(trip.stops[current_stop_idx].location);
 		
 		do take_passengers_out;
 		do take_passengers_in;

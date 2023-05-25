@@ -33,26 +33,28 @@ species Person skills: [scheduling] schedules: [] {
 	int income;
 	int study_level;
 	list<int> profile;
-	Agenda personal_agenda;
+	//Agenda personal_agenda;
 	
+	//activities
+	list<int> activities;
+	list<date> starting_dates;
+	int act_idx <- -1; 
+	point current_destination; 
+	
+	//buildings
 	Building current_building;
 	Building next_building;
 	Building living_building;
 	Building working_building;
-	Building exterior_working_building;
 	Building commercial_building;
 	Building studying_building;
 	Building leasure_building;
-	bool is_going_in_ext_zone <- false; //used for display
-	
-	//
-	int act_idx <- 0; 
-	Activity current_activity;
+	//bool is_going_in_ext_zone <- false; //used for display
 	
 	//
 	Journal journal;
 	bool day_done <- false; 
-	point current_destination; 
+	
 	float walking_speed <- 1.39 ; //#meter / #second ;
 	rgb color <- #black;
 	Vehicle current_vehicle;
@@ -77,54 +79,62 @@ species Person skills: [scheduling] schedules: [] {
 		return one_of(l);
 	}
     
-	action select_agenda{
-        //write "select_agenda";
-        int i <- 0;
-        map<int,Agenda> available_agendas <- [];
-        loop p over:self.profile{
-            loop a over:Agenda{
-                if a.profile one_matches(each = p){
-                    add a to: available_agendas;
-                    i <- i+1;
-                }
-            }
-        }
-        personal_agenda <- one_of(available_agendas);
-    }
+//	action select_agenda{
+//        //write "select_agenda";
+//        int i <- 0;
+//        map<int,Agenda> available_agendas <- [];
+//        loop p over:self.profile{
+//            loop a over:Agenda{
+//                if a.profile one_matches(each = p){
+//                    add a to: available_agendas;
+//                    i <- i+1;
+//                }
+//            }
+//        }
+//        personal_agenda <- one_of(available_agendas);
+//    }
     
-    action register_first_activity {
-    	if !empty(personal_agenda.activities) {
-    		current_activity <- personal_agenda.activities[0];
-    		date d <- current_activity.starting_date add_minutes rnd(-floor(Constants[0].starting_time_randomiser/2), floor(Constants[0].starting_time_randomiser/2));
+
+    action register_activities {
+    	if !empty(activities) and !empty(starting_dates){
+	    	assert length(activities) = length(starting_dates);
+	    	date d;
+	    	loop i from:0 to: length(activities)-1 {
+	    		d <- starting_dates[i] add_minutes rnd(-floor(Constants[0].starting_time_randomiser/2), floor(Constants[0].starting_time_randomiser/2));
+    	  		do later the_action: "start_activity" at: d ;
+	    	}	
+	    }
+	    /* 
+    	if !empty(activities) {
+    		//current_activity <- activities[0];
+    		date d <- starting_dates[0] add_minutes rnd(-floor(Constants[0].starting_time_randomiser/2), floor(Constants[0].starting_time_randomiser/2));
     	  	do later the_action: "start_activity" at: d ;
     	}else{
     		day_done <- true;
     		write get_current_date() + ": " + name + " will do nothing today.";
     	}
+    	*/
     }
-    
-    action time_for_a_new_activity(Activity activity){
-    	
-    }
-    
     
     action start_activity {    	
     	assert !empty(vehicles) warning: true;
-//    	assert current_activity.activity_location != nil warning: true;
-		switch int(current_activity.type){
+    	act_idx <- act_idx + 1;
+    	write get_current_date() + ": " + name + " starts activity" + act_idx color:#green;
+
+		switch int(activities[act_idx]){
 			match 0 {
 				current_destination <- any_location_in(living_building);
 				next_building <- living_building;
 			}
 			match 1 {
-				if flip(Constants[0].ratio_exterior_workers) and (species(current_vehicle) = Car){
-					current_destination <- any_location_in(exterior_working_building);
-					next_building <- exterior_working_building;
-					is_going_in_ext_zone <- true;
-				}else{
+//				if flip(Constants[0].ratio_exterior_workers) and (species(current_vehicle) = Car){
+//					current_destination <- any_location_in(exterior_working_building);
+//					next_building <- exterior_working_building;
+//					is_going_in_ext_zone <- true;
+//				}else{
 					current_destination <- any_location_in(working_building);
 					next_building <- working_building;
-				}
+				//}
 				
 			}
 			match 2 {
@@ -137,6 +147,7 @@ species Person skills: [scheduling] schedules: [] {
 			}
 			match 4 {
 //				dest <- any_location_in(living_building); TODO
+				write "This building type is not defined !in Person" color: #red;
 			}
 			match 5 {
 				current_destination <- any_location_in(leasure_building);
@@ -152,11 +163,11 @@ species Person skills: [scheduling] schedules: [] {
 		}
     	
 		if location != current_destination {
-			Vehicle old_one <- current_vehicle;
+			//Vehicle old_one <- current_vehicle;
 			do choose_current_vehicle;
-			if old_one != nil and old_one != current_vehicle {
-				write "!!! -> " + name + " changed its mode !!! \n Now using " + current_vehicle.name + " instead of " + old_one.name color:#purple;
-			}
+			//if old_one != nil and old_one != current_vehicle {
+			//	write "!!! -> " + name + " changed its mode !!! \n Now using " + current_vehicle.name + " instead of " + old_one.name color:#purple;
+			//}
 			if species(current_vehicle) = Car {
 				do walk_to(current_vehicle.location);
 			}else{
@@ -165,39 +176,43 @@ species Person skills: [scheduling] schedules: [] {
 		}else{
 			color <- #blue;
 			write name + " is already at its destination. It will do its activity directly.";
-			date _end <- get_current_date() add_minutes current_activity.duration;
-			do later the_action: "end_activity" at: _end;
+			//date _end <- get_current_date() add_minutes current_activity.duration;
+			//do later the_action: "end_activity" at: _end;
+		}
+		if act_idx = length(activities) -1 {
+			//daydone
+			day_done <- true;
 		}
     }
     
-    action end_activity {
-//    	write get_current_date() + ": " + name + " ends " + current_activity.title;
-    	color <- #black;
-    	
-    	if act_idx < length(personal_agenda.activities) - 1 {
-    		act_idx <- act_idx + 1;
-    		current_activity <- personal_agenda.activities[act_idx];
-    		
-    		//check if we are not late on our agenda
-    		if current_activity.starting_date > get_current_date() {
-    			do later the_action: "start_activity" at: current_activity.starting_date;
-    		}else{
-//    			write get_current_date() + ": " + name + " starts " + current_activity.title + " late on its agenda." color:#orange; 
-				//this may either be due to a past traffic jam situation or a the randomisation if the starting dates
-    			do later the_action: "start_activity" at: get_current_date() add_seconds 1;
-    		}
-    	}else{
-    		day_done <- true;
-//    		write get_current_date() + ": " + name + " ended its day."; 
-    	}
-    }
+//    action end_activity {
+//    	color <- #black;
+//    	
+//    	if act_idx < length(activities) - 1 {
+//    		act_idx <- act_idx + 1;
+//    		current_activity <- personal_agenda.activities[act_idx];
+//    		
+//    		//check if we are not late on our agenda
+//    		if current_activity.starting_date > get_current_date() {
+//    			do later the_action: "start_activity" at: current_activity.starting_date;
+//    		}else{
+////    			write get_current_date() + ": " + name + " starts " + current_activity.title + " late on its agenda." color:#orange; 
+//				//this may either be due to a past traffic jam situation or a the randomisation if the starting dates
+//    			do later the_action: "start_activity" at: get_current_date() add_seconds 1;
+//    		}
+//    	}else{
+//    		day_done <- true;
+//    	}
+//    }
     
     
     action start_motion{
 //    	write get_current_date() + ": " + name + " takes vehicle: " + current_vehicle.name + " to do: " + current_activity.title;
     	is_moving_chart <- true;
     	ask current_vehicle{
-    		do add_passenger(myself);
+    		if species(myself.current_vehicle) != PublicTransportCard {
+    			do add_passenger(myself);	
+    		}
 			do goto(myself.current_destination);
 		}
     }
@@ -207,10 +222,12 @@ species Person skills: [scheduling] schedules: [] {
     	current_building <- next_building;
     	color <- current_building.color;
     	is_moving_chart <- false;
-    	    	
-    	ask current_vehicle{
-    		do remove_passenger(myself);
-    	}
+    	  
+    	if species(current_vehicle) != PublicTransportCard {  	
+	    	ask current_vehicle{
+	    		do remove_passenger(myself);
+	    	}	
+	    }
 //    	write get_current_date() + ": " + name + " starts doing: " + current_activity.title;
     	
     	//TODO
@@ -220,7 +237,7 @@ species Person skills: [scheduling] schedules: [] {
     			lateness <- lateness + t.lateness;
     		}
     	}
-    	if act_idx < length(personal_agenda.activities) - 1 {
+    	/*if act_idx < length(personal_agenda.activities) - 1 {
     		if lateness > Constants[0].lateness_tolerance {
     			write get_current_date()+ ": "+ name + " took " + lateness + " seconds more than planned to do its trip." color: #purple;    			
     			
@@ -248,7 +265,7 @@ species Person skills: [scheduling] schedules: [] {
     	}else{
     		//case: it was our last activity
     		do later the_action: "end_activity" at: get_current_date() add_minutes current_activity.duration;
-    	}    	
+    	} */   	
     }
     
     action walk_to(point p) {
@@ -352,80 +369,77 @@ species Person skills: [scheduling] schedules: [] {
 	    	  	ask my_feet {
 	    	  		do init_vehicle(myself);
 	    	  	}
-	    	  	if flip(0.5) {
-	    	  		create Car returns: c;
-		    	  	ask c {
-		    	  		do init_vehicle(myself);
-		    	  	}
-	    	  	}else{
-	    	  		create Bike returns: b;
-		    	  	ask b {
-		    	  		do init_vehicle(myself);
-		    	  	}
-	    	  	}	    	  	
+//	    	  	if flip(0.5) {
+//	    	  		create Car returns: c;
+//		    	  	ask c {
+//		    	  		do init_vehicle(myself);
+//		    	  	}
+//	    	  	}else{
+//	    	  		create Bike returns: b;
+//		    	  	ask b {
+//		    	  		do init_vehicle(myself);
+//		    	  	}
+//	    	  	}	    	  	
     		}
     		match 1 {
-    			create Bike returns: b;
-	    	  	ask b {
+    			create Bike {
 	    	  		do init_vehicle(myself);
 	    	  	}
-	    	  	if flip(0.5) {
-	    	  		create Car returns: c;
-		    	  	ask c {
-		    	  		do init_vehicle(myself);
-		    	  	}
-//		    	  	create Feet returns: f;
-//		    	  	ask f {
+//	    	  	if flip(0.5) {
+//	    	  		create Car returns: c;
+//		    	  	ask c {
 //		    	  		do init_vehicle(myself);
 //		    	  	}
-	    	  	}else{
-//	    	  		create Feet returns: f;
-//		    	  	ask f {
-//		    	  		do init_vehicle(myself);
-//		    	  	}
-	    	  	}
+////		    	  	create Feet returns: f;
+////		    	  	ask f {
+////		    	  		do init_vehicle(myself);
+////		    	  	}
+//	    	  	}else{
+////	    	  		create Feet returns: f;
+////		    	  	ask f {
+////		    	  		do init_vehicle(myself);
+////		    	  	}
+//	    	  	}
     		}
     		match 2 {
-    			create Car returns: c;
-	    	  	ask c {
+    			create Car {
 	    	  		do init_vehicle(myself);
 	    	  	}
-	    	  	if flip(0.5) {
-//	    	  		create Feet returns: f;
-//		    	  	ask f {
+//	    	  	if flip(0.5) {
+////	    	  		create Feet returns: f;
+////		    	  	ask f {
+////		    	  		do init_vehicle(myself);
+////		    	  	}
+//	    	  	}else{
+//	    	  		create Bike returns: b;
+//		    	  	ask b {
 //		    	  		do init_vehicle(myself);
 //		    	  	}
-	    	  	}else{
-	    	  		create Bike returns: b;
-		    	  	ask b {
-		    	  		do init_vehicle(myself);
-		    	  	}
-//		    	  	create Feet returns: f;
-//		    	  	ask f {
-//		    	  		do init_vehicle(myself);
-//		    	  	}
-	    	  	}
+////		    	  	create Feet returns: f;
+////		    	  	ask f {
+////		    	  		do init_vehicle(myself);
+////		    	  	}
+//	    	  	}
     		}
     		match 3 {
-    			create PublicTransportCard returns: c;
-	    	  	ask c {
+    			create PublicTransportCard {
 	    	  		do init_vehicle(myself);
 	    	  	}
-	    	  	if flip(0.5) {
-//	    	  		create Feet returns: f;
-//		    	  	ask f {
+//	    	  	if flip(0.5) {
+////	    	  		create Feet returns: f;
+////		    	  	ask f {
+////		    	  		do init_vehicle(myself);
+////		    	  	}
+//	    	  	}else{
+//	    	  		create Bike returns: b;
+//		    	  	ask b {
 //		    	  		do init_vehicle(myself);
 //		    	  	}
-	    	  	}else{
-	    	  		create Bike returns: b;
-		    	  	ask b {
-		    	  		do init_vehicle(myself);
-		    	  	}
-//		    	  	create Feet returns: f;
-//		    	  	ask f {
-//		    	  		do init_vehicle(myself);
-//		    	  	}
-	    	  	}
+////		    	  	create Feet returns: f;
+////		    	  	ask f {
+////		    	  		do init_vehicle(myself);
+////		    	  	}
+//	    	  	}
     		}
     		default {
     			write name + " has a ill-defined vehicle !" color: #red;
@@ -436,6 +450,7 @@ species Person skills: [scheduling] schedules: [] {
 
    
    action highlight_path(int i){
+   		//probably deprecated
    	 	bool found <- false;
    		loop t over: journal.event_log {
    			if t.trip_idx = i {
@@ -452,10 +467,60 @@ species Person skills: [scheduling] schedules: [] {
    
    action link_event_manager (EventManager e){
    		event_manager <- e;
-   		loop v over: vehicles {
-   			v.event_manager <- e;
+//   		loop v over: vehicles {
+//   			v.event_manager <- e;
+//   		}
+   		ask vehicles {
+   			event_manager <- e;
    		}
    }
+
+//	list<date> init_read_dates(string s) {
+//		list<date> r_list;
+//    	list<string> l1 <- split_with(replace(s, "'", ""), ";");
+//    	list<string> l2;
+//    	
+//    	loop e over: l1 {
+//    		l2 <- split_with(e, ":");
+//			
+//    		add date(starting_date.year, starting_date.month, starting_date.day, int(l2[0]), int(l2[1]), 0) to: r_list;
+//    	}
+//    	return r_list;
+//    }
+//    
+//    list<int> init_read_activities(string s) {
+//		list<int> r_list;
+//		int act;
+//		write s;
+//		loop e over: split_with(s, ",") {
+//			act <- int(e);
+//			if act < 10 {
+//				act <- 0;
+//			}else if act < 20 {
+//				act <- 1;
+//			}else if act < 30 {
+//				act <- 2;
+//			}else if act < 40 {
+//				act <- 3;
+//			}else if act < 50 {
+//				act <- 4;
+//			}else if act < 60 {
+//				act <- 5;
+//			}else if act < 70 {
+//				act <- 6;
+//			}else if act < 80 {
+//				act <- 7;
+//			}else if act < 90 {
+//				act <- 8;
+//			}else if act < 100 {
+//				act <- 9;
+//			}
+//			add act to: r_list;
+//		}
+//    	 return r_list;
+//    }
+   
+   
    
    //To add later
 //   action cancel_highlight(int i){

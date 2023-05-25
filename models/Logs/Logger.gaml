@@ -140,27 +140,28 @@ species Logger skills: [scheduling] {
 	}
 	
 	string get_date_in_string {
-		if get_current_date().day < 10 {
-			d <- "0" + string(get_current_date().day);
+		date _date <- get_current_date();
+		if _date.day < 10 {
+			d <- "0" + string(_date.day);
 		}else{
-			d <- string(get_current_date().day);
+			d <- string(_date.day);
 		}
-		if get_current_date().hour < 10 {
-			h <- "0" + string(get_current_date().hour);
+		if _date.hour < 10 {
+			h <- "0" + string(_date.hour);
 		}else{
-			h <- string(get_current_date().hour);
+			h <- string(_date.hour);
 		}
-		if get_current_date().minute < 10 {
-			m <- "0" + string(get_current_date().minute);
+		if _date.minute < 10 {
+			m <- "0" + string(_date.minute);
 		}else{
-			m <- string(get_current_date().minute);
+			m <- string(_date.minute);
 		}
-		if get_current_date().second < 10 {
-			s <- "0" + string(get_current_date().second);
+		if _date.second < 10 {
+			s <- "0" + string(_date.second);
 		}else{
-			s <- string(get_current_date().second);
+			s <- string(_date.second);
 		}
-		return d+ "-" + h + ":" + m + ":" + s;
+		return d + "-" + h + ":" + m + ":" + s;
 	}
 	
 	reflex log {

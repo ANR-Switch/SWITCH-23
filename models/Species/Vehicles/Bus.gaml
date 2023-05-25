@@ -48,9 +48,10 @@ species Bus parent: Vehicle schedules: [] {
 			if !empty(passengers) {
 				write get_current_date() +  ": " + name + " has some passengers still inside even though we are in terminus! :" color:#red;
 				PublicTransportCard tc;
+				write last(trip.stops).real_name;
 				loop p over: passengers {
 					tc <- PublicTransportCard(p.current_vehicle);
-					write tc.name;
+					write tc.name + " wants to go to " + tc.stops[tc.itinerary_idx+1].real_name;
 					ask tc {
 						do get_out;
 					}
@@ -80,7 +81,7 @@ species Bus parent: Vehicle schedules: [] {
 		}
 		
 		loop p over: get_out {
-			remove p from: passengers;
+			//do remove_passenger(p);
 			
 			tc <- PublicTransportCard(p.current_vehicle);
 			ask tc {
@@ -101,11 +102,11 @@ species Bus parent: Vehicle schedules: [] {
 			ask tc {
 				do get_in(myself);
 			}
-			do add_passenger(p);
+			//do add_passenger(p);
 			
-			ask trip.stops[current_stop_idx] {
-				remove PublicTransportCard(p.current_vehicle) from: waiting_persons;
-			}
+//			ask trip.stops[current_stop_idx] {
+//				remove PublicTransportCard(p.current_vehicle) from: waiting_persons;
+//			}
 		
 			write get_current_date() + ": " + name + " to " + trip.route_id + " takes passenger: " + p.name ;
 		}
@@ -126,7 +127,7 @@ species Bus parent: Vehicle schedules: [] {
 	}
 	
 	action arrive_at_destination {		
-		location <- trip.stops[current_stop_idx].location;
+		do move_to(trip.stops[current_stop_idx].location);
 		
 		do take_passengers_out;
 		do take_passengers_in;

@@ -68,7 +68,9 @@ species TransportTrip skills: [scheduling] schedules: [] {
 				shape <- polyline([source.location, target.location]); //useful for directed graph?
 				trip <- myself;
 				route_type <- myself.transport_route.type;
-				arrival_date <- myself.departure_times[i+1];
+				source_arrival_date <- myself.departure_times[i];
+				target_arrival_date <- myself.departure_times[i+1];
+				weight <- target_arrival_date - source_arrival_date;
 			}
 			add TE[0] to: my_edges;
 		}
@@ -175,6 +177,6 @@ species TransportTrip skills: [scheduling] schedules: [] {
 			d <- d + 1;
 		}
 				
-		return date([1970, 1, d, h, int(s_split[1]), 0]);
+		return date([starting_date.year, starting_date.month, d, h, int(s_split[1]), 0]);
 	}
 }

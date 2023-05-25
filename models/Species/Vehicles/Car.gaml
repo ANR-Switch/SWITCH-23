@@ -32,11 +32,11 @@ species Car parent: Vehicle schedules: [] {
 //		owner.current_vehicle <- self;		
 		
 		//set location
-//		location <- _owner.location; //simple way
-		list<Road> car_road_subset <- Road where (each.car_track);
-		Road closest_road <- car_road_subset closest_to(owner.location);
-		list<point> l <- closest_road.displayed_shape closest_points_with (owner.location); 
-		location <- l[0];
+		location <- _owner.location; //simple way
+//		list<Road> car_road_subset <- Road where (each.car_track);
+//		Road closest_road <- car_road_subset closest_to(owner.location);
+//		list<point> l <- closest_road.displayed_shape closest_points_with (owner.location); 
+//		location <- l[0];
 	}
 	
 	path compute_path_between(point p1, point p2) {
@@ -55,8 +55,9 @@ species Car parent: Vehicle schedules: [] {
 
 			if my_path = nil {
 				write get_current_date() + ": " + name + " belonging to: " + owner.name +" is not able to find a path between " + owner.current_building + " and " + owner.next_building color: #red;
-				write "The motion will not be done. \n The activity: " + owner.current_activity.title + " of: " + owner.name + " might be done in the wrong location." color: #orange;
-				owner.location <- any_location_in(owner.current_activity.activity_location);
+				owner.current_building.color <- #purple;
+				owner.next_building.color <- #purple;
+				owner.location <- owner.current_destination;
 				
 				ask owner {
 					do end_motion;

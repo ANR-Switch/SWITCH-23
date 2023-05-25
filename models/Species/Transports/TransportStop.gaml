@@ -23,40 +23,49 @@ species TransportStop schedules: [] {
 	
 
 	list<Person> get_waiting_persons(Vehicle v){
-		list<Person> return_list;
-		
-		switch species(v){
-			match Bus {
-				Bus bus <- Bus(v);
-				loop p over: waiting_persons {
-					if p.routes[p.itinerary_idx] = bus.trip.route_id and p.directions[p.itinerary_idx] = bus.trip.direction_id {
-						add p.owner to: return_list;
+		list<Person> return_list <- [];
+	
+		if !empty(waiting_persons) {
+			switch species(v){
+				match Bus {
+					Bus bus <- Bus(v);
+					loop p over: waiting_persons {
+						if p.routes[p.itinerary_idx] = bus.trip.route_id and p.directions[p.itinerary_idx] = bus.trip.direction_id {
+							loop i from:bus.current_stop_idx + 1 to: length(bus.trip.stops) - 1 {
+								if bus.trip.stops[i].real_name = p.stops[p.itinerary_idx+1].real_name and !(return_list contains p.owner){
+									//check if the bus will pass through the next stop of the person (ie where person wants to get out of the bus)
+									//we do this check because some lines have different terminus despite having the same id
+									add p.owner to: return_list;
+									//write p.name + " should get down at " + bus.trip.stops[i].real_name + " at stop nb " + i + " from " + bus.name;								
+								} 
+							}
+						}
 					}
 				}
-			}
-			match Metro {
-				Metro metro <- Metro(v);
-				loop p over: waiting_persons {
-					if p.routes[p.itinerary_idx] = metro.trip.route_id and p.directions[p.itinerary_idx] = metro.trip.direction_id {
-						add p.owner to: return_list;
+				match Metro {
+					Metro metro <- Metro(v);
+					loop p over: waiting_persons {
+						if p.routes[p.itinerary_idx] = metro.trip.route_id and p.directions[p.itinerary_idx] = metro.trip.direction_id {
+							add p.owner to: return_list;
+						}
 					}
 				}
-			}
-			match Tramway {
-				Tramway tramway <- Tramway(v);
-				loop p over: waiting_persons {
-					if p.routes[p.itinerary_idx] = tramway.trip.route_id and p.directions[p.itinerary_idx] = tramway.trip.direction_id {
-						add p.owner to: return_list;
+				match Tramway {
+					Tramway tramway <- Tramway(v);
+					loop p over: waiting_persons {
+						if p.routes[p.itinerary_idx] = tramway.trip.route_id and p.directions[p.itinerary_idx] = tramway.trip.direction_id {
+							add p.owner to: return_list;
+						}
 					}
 				}
-			}
-			match Teleo {
-				Teleo teleo <- Teleo(v);
-				loop p over: waiting_persons {
-					if p.routes[p.itinerary_idx] = teleo.trip.route_id and p.directions[p.itinerary_idx] = teleo.trip.direction_id {
-						add p.owner to: return_list;
+				match Teleo {
+					Teleo teleo <- Teleo(v);
+					loop p over: waiting_persons {
+						if p.routes[p.itinerary_idx] = teleo.trip.route_id and p.directions[p.itinerary_idx] = teleo.trip.direction_id {
+							add p.owner to: return_list;
+						}
 					}
-				}
+				}	
 			}
 		}		
 		
@@ -66,6 +75,16 @@ species TransportStop schedules: [] {
 //	action add_person_to_waiting_persons_list (Person p, string desired_transport) {
 //		add p::desired_transport to: waiting_persons;
 //	}
+
+	action remove_waiting_person(PublicTransportCard p){
+		if waiting_persons contains p {
+			remove all: p from: waiting_persons;
+			//write real_name + " " + id + " " +  waiting_persons color: #green;
+		}else{
+			write name + " was asked to remove " + p.name + " from its list but it is not here." color:#orange;
+		}
+		
+	}
 	
 	
 	aspect default {
