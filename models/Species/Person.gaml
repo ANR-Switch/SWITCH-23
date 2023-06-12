@@ -49,6 +49,7 @@ species Person skills: [scheduling] schedules: [] {
 	Building commercial_building;
 	Building studying_building;
 	Building leasure_building;
+	Building administrative_building;
 	//bool is_going_in_ext_zone <- false; //used for display
 	
 	//
@@ -99,10 +100,10 @@ species Person skills: [scheduling] schedules: [] {
     	if !empty(activities) and !empty(starting_dates){
 	    	assert length(activities) = length(starting_dates);
 	    	date d;
-	    	loop i from:0 to: length(activities)-1 {
-	    		d <- starting_dates[i] add_minutes rnd(-floor(Constants[0].starting_time_randomiser/2), floor(Constants[0].starting_time_randomiser/2));
-    	  		do later the_action: "start_activity" at: d ;
-	    	}	
+	    	//loop i from:0 to: length(activities)-1 {
+    		d <- starting_dates[0] add_minutes rnd(-floor(Constants[0].starting_time_randomiser/2), floor(Constants[0].starting_time_randomiser/2));
+	  		do later the_action: "start_activity" at: d ;
+	    	//}	
 	    }
 	    /* 
     	if !empty(activities) {
@@ -119,7 +120,7 @@ species Person skills: [scheduling] schedules: [] {
     action start_activity {    	
     	assert !empty(vehicles) warning: true;
     	act_idx <- act_idx + 1;
-    	write get_current_date() + ": " + name + " starts activity" + act_idx color:#green;
+    	//write get_current_date() + ": " + name + " starts activity" + act_idx color:#green;
 
 		switch int(activities[act_idx]){
 			match 0 {
@@ -146,8 +147,7 @@ species Person skills: [scheduling] schedules: [] {
 				next_building <- commercial_building;
 			}
 			match 4 {
-//				dest <- any_location_in(living_building); TODO
-				write "This building type is not defined !in Person" color: #red;
+				current_destination <- any_location_in(administrative_building); 
 			}
 			match 5 {
 				current_destination <- any_location_in(leasure_building);
@@ -174,14 +174,8 @@ species Person skills: [scheduling] schedules: [] {
 				do start_motion;	
 			}
 		}else{
-			color <- #blue;
 			write name + " is already at its destination. It will do its activity directly.";
-			//date _end <- get_current_date() add_minutes current_activity.duration;
-			//do later the_action: "end_activity" at: _end;
-		}
-		if act_idx = length(activities) -1 {
-			//daydone
-			day_done <- true;
+			do end_motion;
 		}
     }
     
@@ -237,6 +231,21 @@ species Person skills: [scheduling] schedules: [] {
     			lateness <- lateness + t.lateness;
     		}
     	}
+    	
+    	//register next activity
+    	if act_idx + 1 = length(activities) {
+			//daydone
+			write get_current_date() + ": " + name + " ended its day correctly.";
+			day_done <- true;
+		}else if act_idx + 1 < length(activities){
+				date d <- starting_dates[act_idx+1] add_minutes rnd(-floor(Constants[0].starting_time_randomiser/2), floor(Constants[0].starting_time_randomiser/2));
+			if get_current_date() < d {
+    	  		do later the_action: "start_activity" at: d ;
+			}else{
+				do later the_action: "start_activity" at: get_current_date() add_seconds 1;
+			}
+		}
+    	
     	/*if act_idx < length(personal_agenda.activities) - 1 {
     		if lateness > Constants[0].lateness_tolerance {
     			write get_current_date()+ ": "+ name + " took " + lateness + " seconds more than planned to do its trip." color: #purple;    			
@@ -455,7 +464,7 @@ species Person skills: [scheduling] schedules: [] {
    		loop t over: journal.event_log {
    			if t.trip_idx = i {
 	   			found <- true;
-	   			ask Road(t.road) {
+	   			ask Road(t.road_gama_id) {
 	   				color <- #red;
 	   			}
    			}
@@ -474,52 +483,7 @@ species Person skills: [scheduling] schedules: [] {
    			event_manager <- e;
    		}
    }
-
-//	list<date> init_read_dates(string s) {
-//		list<date> r_list;
-//    	list<string> l1 <- split_with(replace(s, "'", ""), ";");
-//    	list<string> l2;
-//    	
-//    	loop e over: l1 {
-//    		l2 <- split_with(e, ":");
-//			
-//    		add date(starting_date.year, starting_date.month, starting_date.day, int(l2[0]), int(l2[1]), 0) to: r_list;
-//    	}
-//    	return r_list;
-//    }
-//    
-//    list<int> init_read_activities(string s) {
-//		list<int> r_list;
-//		int act;
-//		write s;
-//		loop e over: split_with(s, ",") {
-//			act <- int(e);
-//			if act < 10 {
-//				act <- 0;
-//			}else if act < 20 {
-//				act <- 1;
-//			}else if act < 30 {
-//				act <- 2;
-//			}else if act < 40 {
-//				act <- 3;
-//			}else if act < 50 {
-//				act <- 4;
-//			}else if act < 60 {
-//				act <- 5;
-//			}else if act < 70 {
-//				act <- 6;
-//			}else if act < 80 {
-//				act <- 7;
-//			}else if act < 90 {
-//				act <- 8;
-//			}else if act < 100 {
-//				act <- 9;
-//			}
-//			add act to: r_list;
-//		}
-//    	 return r_list;
-//    }
-   
+ 
    
    
    //To add later

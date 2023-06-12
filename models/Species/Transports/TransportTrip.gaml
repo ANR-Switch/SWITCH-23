@@ -34,7 +34,7 @@ species TransportTrip skills: [scheduling] schedules: [] {
 	list<list<Road>> bus_path;
 	
 	
-	int registration_minutes <- 30 const: true;
+	int registration_minutes <- Constants[0].minutes_for_graph_registration;
 	
 	//the itinerary
 	list<TransportStop> stops;
@@ -49,6 +49,7 @@ species TransportTrip skills: [scheduling] schedules: [] {
 			if get_current_date() < departure_times[0] add_minutes - registration_minutes {
 				do later the_action:"register_to_graph" at: departure_times[0] add_minutes - registration_minutes;
 			}else{
+				write 'A trnsportTrip register itself late on schedule, this should not happen' color:#red;
 				do later the_action:"register_to_graph" at: get_current_date() add_seconds 1;
 			}
 			

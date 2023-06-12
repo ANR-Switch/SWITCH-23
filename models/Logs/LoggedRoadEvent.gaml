@@ -15,9 +15,11 @@ import "../Species/Map/Road.gaml"
 
 species LoggedRoadEvent schedules: [] {
 	int trip_idx;
-	string activity_name;
+	int activity_type;
 	string vehicle;
-	string road;
+	string vehicle_type;
+	string road_gama_id;
+	string road_topo_id;
 	int road_length;
 	date entry_date;
 	date leave_date; 

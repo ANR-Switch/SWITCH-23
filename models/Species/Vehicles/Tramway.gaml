@@ -74,12 +74,11 @@ species Tramway parent: Vehicle schedules: [] {
 
 			if trip.stops[current_stop_idx].real_name = tc.stops[tc.itinerary_idx].real_name {
 				add p to: get_out;
+				//write "This is just for test: " + name + " makes " + p.name + " go out";
 			}
 		}
 		
-		loop p over: get_out {
-			//do remove_passenger(p);
-			
+		loop p over: get_out {			
 			tc <- PublicTransportCard(p.current_vehicle);
 			ask tc {
 				do get_out;
@@ -99,13 +98,12 @@ species Tramway parent: Vehicle schedules: [] {
 			ask tc {
 				do get_in(myself);
 			}
-			//do add_passenger(p);
-			
-			ask trip.stops[current_stop_idx] {
-				remove PublicTransportCard(p.current_vehicle) from: waiting_persons;
+		}
+		//remove edge from graph
+		if current_stop_idx < length(trip.my_edges) {
+			ask trip.my_edges[current_stop_idx] {
+				do die;	
 			}
-		
-			write get_current_date() + ": " + name + " to " + trip.route_id + " takes passenger: " + p.name ;
 		}
 	}
 	
@@ -127,8 +125,9 @@ species Tramway parent: Vehicle schedules: [] {
 		do move_to(trip.stops[current_stop_idx].location);
 		
 		do take_passengers_out;
-		do take_passengers_in;
-	
+		if current_stop_idx < length(trip.stops){
+			do take_passengers_in;	
+		}	
 //		if get_current_date() >= trip.departure_times[current_stop_idx] {
 //			do go_to_next_stop;
 //		}else{

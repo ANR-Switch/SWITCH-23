@@ -25,7 +25,7 @@ species TransportGraph skills: [scheduling] schedules: [] {
 	 	loop st1 over: TransportStop {
 	 		if !(done_stops contains st1.real_name) {
 		 		loop st2 over: TransportStop {
-		 			if (st1 != st2) and (st2.real_name = st1.real_name) and (distance_to(st1.location, st2.location)) < 500 {
+		 			if (st1 != st2) and (st1.location != st2.location) and (st2.real_name = st1.real_name) and (distance_to(st1.location, st2.location)) < 500 {
 		 				create TransportEdge {
 		 					source <- st1;
 		 					target <- st2;
@@ -45,6 +45,24 @@ species TransportGraph skills: [scheduling] schedules: [] {
 		 		add st1.real_name to: done_stops;
 		 	}
 		}
+		//
+		
+		loop st1 over: TransportStop {
+		 	loop st2 over: TransportStop {
+	 			if  (distance_to(st1.location, st2.location)) < Constants[0].allowed_walking_distance and (st1 != st2) and (st1.location != st2.location) {
+	 				create TransportEdge {
+	 					source <- st1;
+	 					target <- st2;
+	 					shape <- polyline([source.location, target.location]);
+	 					connection <- true;
+	 					walk_trip <- true; //important!
+	 					weight <- distance_to(st1.location, st2.location)/3;
+	 				}
+	 			}
+		 	}
+		}
+		//
+		
 		write "Done.";
 	}
 	
@@ -73,7 +91,9 @@ species TransportGraph skills: [scheduling] schedules: [] {
 			string current_edge_route_id;
 			loop _elem over: p.edges {
 				if TransportEdge(_elem).connection {
-					//ignore
+					if TransportEdge(_elem).walk_trip {
+						add  TransportEdge(_elem).source::nil to: itinerary;
+					}
 				}else if TransportEdge(_elem).trip.route_id != current_edge_route_id {
 					add  TransportEdge(_elem).source::TransportEdge(_elem).trip to: itinerary;
 					current_edge_route_id <- TransportEdge(_elem).trip.route_id;
@@ -104,7 +124,26 @@ species TransportGraph skills: [scheduling] schedules: [] {
 				}	
 			}
 			*/
-			
+			//to test
+//			if last(itinerary).key.real_name = "Andromède-Lycée" {
+//				loop e over: p.edges {
+//					TransportEdge t <- TransportEdge(e);
+//					if t.trip != nil {
+//						write t.source.real_name + "-" + t.target.real_name + " via " + t.trip.trip_id + " " +t.connection;	
+//					}else{
+//						write t.source.real_name + "-" + t.target.real_name +  " " +t.connection color:#pink;	
+//					}
+//				}
+//			}
+			if all_match(itinerary, each.value = nil) {
+				//this happens if the itinerary is only made of connections, in this case, the person should just walk
+				//it seems to happen when it's very late and the transporttrip are all dead
+				return nil;
+			}
+			if length(itinerary) = 2 and itinerary[0].key.real_name = itinerary[1].key.real_name {
+				//weird case that happens with the graph
+				return nil;
+			}
 			return itinerary;	
 		}else{
 			return nil;

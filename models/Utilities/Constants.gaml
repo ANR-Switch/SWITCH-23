@@ -9,14 +9,23 @@
 model Constants
 
 species Constants schedules: [] {
+	/*
+	 * this factor is to reduce the capacity of the roads to avoid having to simulate the whole population.
+	 * One can model 1/10th of the population by reducing the roads' capacity of a factor 10 too.
+	 */
+	int simulation_reduction_factor <- 1 const:true;
+	
 	//logs
-	bool log_journals <- false const:true;
+	bool log_journals <- true const:true;
 	bool log_roads <- false const:true;
 	bool log_traffic <- false const:true;
 	
 	//vehicles
-	float car_size <- 4.0 const:true;
+	float car_size <- 4.0 * simulation_reduction_factor const:true;
 	float bus_size <- 11.0 const:true;
+	
+	//PublicTransportCard
+	int waiting_time_before_recomputing <- 15 const: true;
 	
 	//person
 	int starting_time_randomiser <- 120 const: true; //minutes
@@ -24,15 +33,23 @@ species Constants schedules: [] {
 	//float ratio_exterior_workers <- 0.85 const: true; //[0;1]
 	
 	//road
+	bool double_the_roads <- true const:true; //true if the database does not pre-double the roads for both direction, in this case we do it at initial time
 	float minimum_road_capacity_required <- car_size const:true; //size of a car or a bus
-	float speed_factor <- 0.7 const:true;
+	
+	float speed_factor <- 0.9 const:true;
 	float inflow_delay <- 2.0 const: true;
 	float outflow_delay <- 3.0 const: true;
 	float alpha <- 0.15 const:true;
 	float beta <- 4.0 const:true;
 	int deadlock_patience <- 2 const:true; //minutes
 	
+	//TransportGraph
+	int allowed_walking_distance <- 800 const:true; //meters to allow a "walk" connection between two stops in the public transport network
+	
 	//TransportStop
-	float connection_weight <- 60.0 const:true; //in seconds
+	float connection_weight <- 0.0 const:true; //in seconds has to be 0 for now
+	
+	//TransportTrip
+	int minutes_for_graph_registration <- 15 const: true; //a trip will add itself to the transportgraph this many minutes before starting the bus/metro/...
 }
 

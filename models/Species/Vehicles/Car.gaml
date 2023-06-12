@@ -49,16 +49,14 @@ species Car parent: Vehicle schedules: [] {
 			current_road <- nil;
 			owner.location <- location;
 			my_destination <- dest;
-//			float t1 <- machine_time;
+			//float t1 <- machine_time;
 			my_path <- compute_path_between(location, my_destination);
-//			write "time : >>> " + (machine_time - t1) + " milliseconds" color: #green;
+			//write "time : >>> " + (machine_time - t1) + " milliseconds" color: #green;
 
 			if my_path = nil {
 				write get_current_date() + ": " + name + " belonging to: " + owner.name +" is not able to find a path between " + owner.current_building + " and " + owner.next_building color: #red;
-				owner.current_building.color <- #purple;
-				owner.next_building.color <- #purple;
 				owner.location <- owner.current_destination;
-				
+				//do trash_log;
 				ask owner {
 					do end_motion;
 				}
@@ -67,6 +65,10 @@ species Car parent: Vehicle schedules: [] {
 					do propose;			
 				}else{
 					write get_current_date() + ": " + owner.name + " called goto on " + name + " but the path computed is null.";
+					//do trash_log;
+					ask owner {
+						do end_motion;
+					}
 				}	
 			}
 		}else{
@@ -130,6 +132,13 @@ species Car parent: Vehicle schedules: [] {
 		ask owner {
 			do walk_to(current_destination); //this may kill the vehicle so make sure this is our last action
 		}
+	}
+	
+	action trash_log {
+		string output_path <- "C:\\Users\\coohauterv\\git\\SWITCH-23\\output\\";
+		string the_file <- output_path + "failed_buildings.csv" ;
+		save [owner.current_building.db_id, owner.next_building.db_id] to: the_file format:"csv" rewrite:false;
+	
 	}
 	
 //	float compute_theoretical_time {

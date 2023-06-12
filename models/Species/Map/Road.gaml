@@ -10,7 +10,7 @@ model Road
 import "../Vehicles/Vehicle.gaml"
 
 species Road skills: [scheduling] schedules: [] {
-	int id;
+	string topo_id;
 	int lanes <- 1; //From shapefile 
 	float max_speed <- 50.0 #km/#h; // From shapefile //must be then transformed in m/s
 	string oneway <- "no"; //From shapefile
@@ -18,6 +18,8 @@ species Road skills: [scheduling] schedules: [] {
 	point trans <- {2.0, 2.0};
 	geometry displayed_shape;
 	rgb color <- #black;
+	int importance;
+	bool main_comp <- false;
 	
 	//identifiers
 	bool car_track <- false;
@@ -35,7 +37,7 @@ species Road skills: [scheduling] schedules: [] {
 	date last_exit;
 	float inflow_delay <- Constants[0].inflow_delay;
 	float outflow_delay <- Constants[0].outflow_delay;
-	float gap_travel_time <- shape.perimeter / 5; 
+	float gap_travel_time <- shape.perimeter / 5 ; 
 	int deadlock_patience <- Constants[0].deadlock_patience; //minutes to try to force the car inside the road
 	list<pair<Vehicle, date>> _queue; //queue is a build-in name so we use _queue TODO: use a map ?
 	list<Vehicle> waiting_list;

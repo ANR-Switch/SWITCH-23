@@ -18,6 +18,7 @@ species TransportEdge schedules: [] {
 	TransportStop target;
 	TransportTrip trip;
 	bool connection <- false;
+	bool walk_trip <- false;
 	float connection_weight <- Constants[0].connection_weight;
 	date target_arrival_date;
 	date source_arrival_date;

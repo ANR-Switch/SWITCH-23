@@ -16,9 +16,9 @@ species Logger skills: [scheduling] {
 	//files
 	string output_path <- "C:\\Users\\coohauterv\\git\\SWITCH-23\\output\\";
 	
-	string journals_output_file <- "journals_person" + string(length(Person)) + "_modality" + string(int(10*car_weight)) + string(int(10*bike_weight)) + string(int(10*feet_weight)) + ".csv";
-	string roads_output_file <- "roads_person" + string(length(Person)) + "_modality" + string(int(10*car_weight)) + string(int(10*bike_weight)) + string(int(10*feet_weight)) + "_step" + string(int(step)) + ".csv";
-	string traffic_output_file <- "traffic_person" + string(length(Person)) + "_modality" + string(int(10*car_weight)) + string(int(10*bike_weight)) + string(int(10*feet_weight)) + "_step" + string(int(step)) + ".csv";
+	string journals_output_file <- "journals_person" + string(length(Person)) + "_modality" + string(int(10*car_weight)) + string(int(10*bike_weight)) + string(int(10*feet_weight)) + string(int(10*public_transport_weight)) + ".csv";
+	string roads_output_file <- "roads_person" + string(length(Person)) + "_modality" + string(int(10*car_weight)) + string(int(10*bike_weight)) + string(int(10*feet_weight)) + string(int(10*public_transport_weight)) + "_step" + string(int(step)) + ".csv";
+	string traffic_output_file <- "traffic_person" + string(length(Person)) + "_modality" + string(int(10*car_weight)) + string(int(10*bike_weight)) + string(int(10*feet_weight)) + string(int(10*public_transport_weight)) + "_step" + string(int(step)) + ".csv";
 	
 	//options
 	bool log_roads_bool <- Constants[0].log_roads;
@@ -61,7 +61,8 @@ species Logger skills: [scheduling] {
 		int cars <- Person count(each.is_moving_chart and species(each.current_vehicle)=Car);
 		int bikes <- Person count(each.is_moving_chart and species(each.current_vehicle)=Bike);
 		int feet <- Person count(each.is_moving_chart and species(each.current_vehicle)=Feet);
-		add [cars, bikes, feet, get_date_in_string()] to: full_traffic_msg;
+		int public_transport <- Person count(each.is_moving_chart and species(each.current_vehicle)=PublicTransportCard);
+		add [cars, bikes, feet, public_transport, get_date_in_string()] to: full_traffic_msg;
 //		add [cars, bikes, feet, get_current_date()] to: full_traffic_msg;
 	}
 	

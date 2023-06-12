@@ -21,8 +21,9 @@ species PublicTransportCard parent: Vehicle schedules: [] {
 	list<int> directions;
 	int itinerary_idx <- 0;
 	Vehicle current_public_transport;
+	date start <- nil;
 	
-	int max_waiting_time <- 40 const:true; //minutes
+	int max_waiting_time <- Constants[0].waiting_time_before_recomputing; //minutes
 	
 	//debug
 	list<string> journal;
@@ -54,43 +55,65 @@ species PublicTransportCard parent: Vehicle schedules: [] {
 		my_destination <- dest;
 		location <- owner.location;
 		
-		ask public_transport_graph {
-			myself.itinerary <- get_itinerary_between(myself.location, myself.my_destination);
-		}
-
-		if itinerary = nil {
-			write get_current_date() + ": " + name + " belonging to: " + owner.name +" is not able to find a itinerary between " + owner.current_building + " and " + owner.next_building color: #red;
-			//write "The motion will not be done. \n The activity: " + owner.current_activity.title + " of: " + owner.name + " might be done in the wrong location." color: #orange;
-			owner.location <- owner.current_destination;
-			ask owner {
-				do end_motion;
+		if my_destination != location {
+//			if distance_to(my_destination, location) < 500 {
+//				write owner.name + " short ditance" color:#green;
+//				//TODO walk instead
+//			}
+			ask public_transport_graph {
+				myself.itinerary <- get_itinerary_between(myself.location, myself.my_destination);
+			}
+	
+			if itinerary = nil {
+				write get_current_date() + ": " + name + " belonging to: " + owner.name +" is not able to find a itinerary between " + owner.current_building + " and " + owner.next_building color: #red;
+				//write "The motion will not be done. \n The activity: " + owner.current_activity.title + " of: " + owner.name + " might be done in the wrong location." color: #orange;
+				owner.location <- owner.current_destination;
+				add get_current_date() + ": got an empty itinerary!" to: journal;
+				ask owner {
+					do end_motion;
+				}
+			}else{
+				//display itinerary
+	//			loop e over: itinerary {
+	//				if e.value != nil {
+	//					write owner.name + " " + e.key.real_name + " towards " + e.value.transport_route.long_name;
+	//				}else{
+	//					write owner.name + " " + e.key.real_name;
+	//				}
+	//			}
+				//
+				
+				if !empty(itinerary) {
+					do convert_itinerary(itinerary);
+					
+					if start = nil {
+						start <- get_current_date();
+					}
+					
+					//log
+					string s <- get_current_date() + " itinerary: ";
+					loop e over: stops {
+						s <- s + e.real_name + ";";
+					}
+					add s to: journal;
+					
+					do go_on_itinerary;
+//					do walk_to(stops[0].location);
+//					do wait_to_stop;
+				}else{
+					write get_current_date() + ": " + owner.name + " called goto on " + name + " but the path computed is empty." color:#red;
+					owner.location <- owner.current_destination;
+					add get_current_date() + ": got an empty itinerary!" to: journal;
+					ask owner {
+						do end_motion;
+					}
+				}	
 			}
 		}else{
-			//display itinerary
-//			loop e over: itinerary {
-//				if e.value != nil {
-//					write owner.name + " " + e.key.real_name + " towards " + e.value.transport_route.long_name;
-//				}else{
-//					write owner.name + " " + e.key.real_name;
-//				}
-//			}
-			//
-			
-			if !empty(itinerary) {
-				do convert_itinerary(itinerary);
-				
-				//log
-				string s <- get_current_date() + " itinerary: ";
-				loop e over: stops {
-					s <- s + e.real_name + ";";
-				}
-				add s to: journal;
-				
-				do walk_to(stops[0].location);
-				do wait_to_stop;
-			}else{
-				write get_current_date() + ": " + owner.name + " called goto on " + name + " but the path computed is null.";
-			}	
+			write get_current_date() + ": " + owner.name + " is already at destination, it will not use " + name;
+			ask owner {				
+				do end_motion;
+			}			
 		}
 	}
 	
@@ -100,22 +123,25 @@ species PublicTransportCard parent: Vehicle schedules: [] {
 		ask v {
 			do add_passenger(myself.owner);
 		}
-		ask stops[itinerary_idx] {
-			do remove_waiting_person(myself);
+		
+		if v.passengers contains owner { //false when the bus is full and cannot add owner to its passengers
+			ask stops[itinerary_idx] {
+				do remove_waiting_person(myself);
+			}
+			
+			string s;
+			s <- get_current_date() + ": got in " + v.name + " at stop " + stops[itinerary_idx].real_name;
+			add s to: journal;
+			
+			itinerary_idx <- itinerary_idx + 1;	
 		}
-		
-		string s;
-		s <- get_current_date() + ": got in " + v.name + " at stop " + stops[itinerary_idx].real_name;
-		add s to: journal;
-		
-		itinerary_idx <- itinerary_idx + 1;
 	}
 	
 	action get_out {	
 		ask current_public_transport {
 			do remove_passenger(myself.owner);
 		}	
-		add get_current_date() + ": got out of " + current_public_transport.name  to: journal;
+		add get_current_date() + ": got out of " + current_public_transport.name + " at stop " + stops[itinerary_idx-1].real_name to: journal;
 		
 		owner.color <- #black;
 		current_public_transport <- nil;
@@ -124,19 +150,38 @@ species PublicTransportCard parent: Vehicle schedules: [] {
 		if length(stops) - 1 = itinerary_idx {
 			do end_itinerary;
 		}else{
-			do wait_to_stop;
+			do go_on_itinerary;
+		}
+	}
+	
+	action go_on_itinerary {
+		if itinerary_idx < length(routes) {
+			if routes[itinerary_idx] != nil {
+				do wait_to_stop;	
+			}else{
+				itinerary_idx <- itinerary_idx +1;
+				//write get_current_date() + ": " + owner.name  + " walks from one stop to another.";
+				add get_current_date() + ": " + owner.name  + " walks from one stop to another." to: journal;
+				do later the_action: "go_on_itinerary" at: get_current_date() add_minutes 2;
+			}
+		}else{
+			do end_itinerary;
 		}
 	}
 	
 	action end_itinerary {
-		write get_current_date() + ": " + owner.name + " arrived through public transport" color:#green;
+		//write get_current_date() + ": " + owner.name + " arrived through public transports in " + (get_current_date() - start)/60 + " minutes." color:#green;
+		add get_current_date() + ": " + (get_current_date() - start)/60 + " minutes." to: journal;
+	
 		itinerary_idx <- nil;
+		start <- nil;
 		my_destination <- nil;
 		stops <- [];
 		directions <- [];
 		routes <- [];
 		
-		do walk_to(my_destination);		
+		do walk_to(my_destination);	
+		add get_current_date() + ": arrived successfully." to: journal;	
 		ask owner {
 			do end_motion;
 		}	
@@ -146,21 +191,26 @@ species PublicTransportCard parent: Vehicle schedules: [] {
 		owner.location <- stops[itinerary_idx].location;
 		location <- owner.location;
 		add self to: stops[itinerary_idx].waiting_persons;
-		do later the_action:"recompute_itinerary" with_arguments:map("idx"::itinerary_idx) at: get_current_date() add_minutes max_waiting_time;
+		do later the_action:"recompute_itinerary" with_arguments:map("old_position"::location) at: get_current_date() add_minutes max_waiting_time;
 	}
 	
-	action recompute_itinerary(int idx) {
+	action recompute_itinerary(point old_position) {
 		//check if we got our correspondance since we started to wait
-		//if empty stops it means we actually arrived somewhere before the do later triggers itself
-		if idx = itinerary_idx and current_public_transport = nil and my_destination != nil {
+		if !empty(stops) and old_position = owner.location and current_public_transport = nil {
 			//recompute
-			write get_current_date() + ": " + name + " recomputed its path because it seems stuck" color:#orange;
+			/*write get_current_date() + ": " + name + " recomputed its path because it is stuck at " + stops[itinerary_idx].real_name color:#orange;
+			write get_current_date() + ": " + name + " wants to take " + routes[itinerary_idx] + " to go down at " + stops[itinerary_idx+1].real_name color:#orange;
+			write stops;
+			write routes;
+			write "";*/
 			add get_current_date() + ": recomputed its path because it seems stuck" to: journal;
 			
 			ask stops[itinerary_idx] {
 				do remove_waiting_person(myself);
 			}
 			do goto(my_destination);
+		}else{
+			//write "all good" color:#green;
 		}
 	}
 	

@@ -35,33 +35,43 @@ global {
 	
 	geometry shape <- envelope(shape_roads_CT);
 	
-	csv_file population <- csv_file("../includes/population/population_test.csv", ",", true);
+	csv_file population <- csv_file("../includes/population/population.csv", ",", true);
 	
 	//SIM	
-	float step <- 60 #seconds parameter: "Step"; //86400 for a day
+	float step <- 3600 #seconds parameter: "Step"; //86400 for a day
 	float simulated_days <- 1 #days parameter: "Simulated_days";
 	float experiment_init_time;
 	
 	//general paramters	 
-	date starting_date <- date([1970, 1, 1, 4, 40, 0]);
+	date starting_date <- date([1970, 1, 1, 4, 0, 0]);
 	//date sim_starting_date <- date([1970, 1, 1, 0, 0, 0]); //has to start at midnight! for activity.gaml init
+	float cycle_timer <- machine_time;
 
 	//modality
-	float feet_weight <- 0.0 parameter: "Feet";
-	float bike_weight <- 0.0 parameter: "Bike";
-	float car_weight <- 0.0 parameter: "Car";
-	float public_transport_weight <- 0.1 parameter: "Public_Transport";
+	float feet_weight <- 0.05 parameter: "Feet";
+	float bike_weight <- 0.10 parameter: "Bike";
+	float car_weight <- 0.65 parameter: "Car";
+	float public_transport_weight <- 0.2 parameter: "Public_Transport";
 	//highlight path
 	int Person_idx <- 0 parameter: "Person_idx";
 	int Path_idx <- 0 parameter: "Path_idx";
 
 	int nb_event_managers <- 1;
 	
+	
+	//Graphs
 	graph car_road_graph;
 	graph feet_road_graph;
 	graph bike_road_graph;
 	TransportGraph public_transport_graph;
+	
+	int road_importance <- 7 const:true; //considers roads of importance less than this
+	bool save_matrix_as_csv <- false;
+	string matrix_path <- "C:\\Users\\coohauterv\\git\\SWITCH-23\\includes\\matrices\\";
+	matrix<int> car_shortest_paths;
 	 
+	 
+	//buildings
 	list<Building> working_buildings;
 	list<Building> living_buildings;
 	list<Building> leasure_buildings;
@@ -69,6 +79,7 @@ global {
 	list<Building> commercial_buildings;
 	list<Building> administrative_buildings;
 	list<Building> exterior_working_buildings;
+	list<Building> trash_list;
 	
 	init {
 		seed <- 42.0;
@@ -83,7 +94,7 @@ global {
 		//init
 		do init_event_managers; //good to do first
 		do init_buildings;
-	 	//do init_roads;
+	 	do init_roads;
 	 	do init_public_transport;
 	 	
 	 	do init_graphs; //should be done after roads and public transports
@@ -133,36 +144,40 @@ global {
 		write "Persons...";
 		float t1 <- machine_time;
 		
-		create Person from: population with: [
-			/*first_name::read("nom"),
-			age::int(read("age")),
-			genre::read("genre"),
-			professional_activity::int(read("activite_pro")),
-			income::int(read("revenu")),
-			study_level::int(read("etudes"))*/
-			activities::init_read_activities(read("activities")),
-			starting_dates::init_read_dates(string(read("depart")))
-		]{		
-			event_manager <- EventManager[0];
+		loop i from:0 to: 4 {
+		
+			create Person from: population with: [
+				/*first_name::read("nom"),
+				age::int(read("age")),
+				genre::read("genre"),
+				professional_activity::int(read("activite_pro")),
+				income::int(read("revenu")),
+				study_level::int(read("etudes"))*/
+				activities::init_read_activities(read("activities")),
+				starting_dates::init_read_dates(string(read("depart")))
+			]{		
+				event_manager <- EventManager[0];
+					
 				
+	//			//buildings
+				living_building <- select_building(living_buildings);
+				location <- any_location_in(living_building);
+				current_building <- living_building;
+				working_building <- select_building(working_buildings);
+				administrative_building <- select_building(administrative_buildings);
+				studying_building <- select_building(studying_buildings);
+				commercial_building <- select_building(commercial_buildings);
+				leasure_building <- select_building(leasure_buildings);
+				
+	//			//vehicle
+				do choose_vehicles;
+	//			pasbesoin do link_event_manager(EventManager[0]); //after choose vehicle
+	//			//activities
+				do register_activities; //after link to eventmanager
+	
+				//write name + " created.";
+			}
 			
-//			//buildings
-			living_building <- select_building(living_buildings);
-			location <- any_location_in(living_building);
-			current_building <- living_building;
-			working_building <- select_building(working_buildings);
-			//exterior_working_building <- select_building(exterior_working_buildings);
-			studying_building <- select_building(studying_buildings);
-			commercial_building <- select_building(commercial_buildings);
-			leasure_building <- select_building(leasure_buildings);
-//			
-//			//vehicle
-			do choose_vehicles;
-//			pasbesoin do link_event_manager(EventManager[0]); //after choose vehicle
-//			//activities
-			do register_activities; //after link to eventmanager
-
-			//write name + " created.";
 		}		
 		write "There are " + length(Person) + " Persons loaded in " + (machine_time-t1)/1000.0 + " seconds.";
 	}
@@ -172,7 +187,8 @@ global {
 	 	float t1 <- machine_time;
 		create Building from: shape_buildings with: [
 			type::int(read("type")),
-			real_name::read("name")
+			real_name::read("name"),
+			db_id::read("osm_id")
 		]{
 			switch int(type) {
 				match 0 {
@@ -216,25 +232,27 @@ global {
 	 
 	 action init_roads {
 	 	write "Roads...";
-	 	bool doubling <- true; //double roads for directed graph
 	 	float t1 <- machine_time;
 	 	//car roads
 		create Road from: shape_roads_CT with: [lanes::int(read("NB_VOIES")), 
 											max_speed::float(read("VIT_MOY_VL")),
 											oneway::string(read("SENS")),
-											id::int(read("ID")),
+											topo_id::string(read("ID")),
 											allowed_vehicles::string(read("VEHICULES")),
+											importance::int(read("IMPORTANCE")),
 											event_manager::EventManager[0]
 		] {
-			if doubling {
+			
+			if Constants[0].double_the_roads {
 				//double
 				if oneway = "Double sens" {	
 					create Road with: [
 						lanes::self.lanes,
 						max_speed::self.max_speed,
 						oneway::self.oneway,
-						id::self.id,
+						topo_id::self.topo_id,
 						allowed_vehicles::self.allowed_vehicles,
+						importance::self.importance,
 						event_manager::EventManager[0],
 						shape::polyline(reverse(self.shape.points))
 					];	
@@ -243,9 +261,12 @@ global {
 			if oneway = "Sens inverse" {				
 				shape <- polyline(reverse(shape.points));
 			}
+			if oneway = "Sens inverse" or oneway = "Sens direct" {
+				color <- #orange; //TODO remove
+			}
 		}
 		write "There are " + length(Road) + " Roads loaded in " + (machine_time-t1)/1000.0 + " seconds.";
-		write "" + length(Road where each.had_to_increase_capacity) + " roads had to increase their maximum capacity.";
+		write "" + length(Road where each.had_to_increase_capacity) + " roads had to increase their maximum capacity." color:#orange;
 	 }
 	 
 	 action init_graphs {
@@ -255,24 +276,63 @@ global {
 	 	map<Road, float> road_weights_map;
 	 	
 	 	//feet 
-	 	road_subset <- Road where (each.max_speed < 80);
+	 	road_subset <- Road where (each.max_speed < 70/3.6);
 	 	road_weights_map <- road_subset as_map (each:: (each.shape.perimeter));
 	 	feet_road_graph <- as_edge_graph(road_subset) with_weights road_weights_map;
 	 	write "Pedestrians can use " + length(road_subset) + " road segments.";
 	 	
 	 	//bike
-	 	road_subset <- Road where (each.max_speed < 80);
+	 	/*
+	 	 * for now they use the same as the pedestrians 
+	 	road_subset <- Road where (each.max_speed < 70/3.6);
 	 	road_weights_map <- road_subset as_map (each:: (each.shape.perimeter));
 	 	bike_road_graph <- as_edge_graph(road_subset) with_weights road_weights_map;
+	 	* 
+	 	*/
+	 	bike_road_graph <- feet_road_graph;
 	 	write "Cyclists can use " + length(road_subset) + " road segments.";
 	 	
 	 	//car
+	 	road_subset <- Road where (each.car_track and each.importance < road_importance);
+	 	road_weights_map <- road_subset as_map (each:: (each.shape.perimeter/each.max_speed));
+	 	car_road_graph <- as_edge_graph(road_subset) with_weights road_weights_map;
+	 	car_road_graph <- directed(car_road_graph);
+	 	//write "Cars can use " + length(road_subset) + " road segments.";
+	 	//this part is to remove the non convex zones of the graph
+	 	list connected_comp <- car_road_graph connected_components_of true;
+	 	int max_size <- 0;
+	 	list main_comp ;
+	 	loop e over: connected_comp {
+	 		if length(e) > max_size {
+	 			max_size <- length(e);
+	 			main_comp <- e;
+	 		}
+	 	}
+	 	write "The road graph main component contains " + length(main_comp);
+	 	loop road over: main_comp {
+	 		Road(road).main_comp <- true;
+	 		//Road(road).color <- #white;
+	 	}
+	 	
+	 	loop r over: Road where !(each.main_comp) {
+ 			//write " a road dies";
+ 			ask r {
+ 				do die;
+ 			}
+	 	}	 	
+	 	
+	 	//car graph connex
 	 	road_subset <- Road where (each.car_track);
 	 	road_weights_map <- road_subset as_map (each:: (each.shape.perimeter/each.max_speed));
-	 	car_road_graph <- as_edge_graph(Road) with_weights road_weights_map;
+	 	car_road_graph <- as_edge_graph(road_subset) with_weights road_weights_map;
 	 	car_road_graph <- directed(car_road_graph);
 	 	write "Cars can use " + length(road_subset) + " road segments.";
 	 	
+	 	if save_matrix_as_csv {
+	 		car_shortest_paths <- save_matrix_from_graph(car_road_graph, matrix_path+"car_road_matrix" + string(road_importance) + ".csv");
+	 	}else{
+	 		//car_shortest_paths <- matrix(csv_file(matrix_path+"car_road_matrix" + string(road_importance) + ".csv"));
+	 	}
 	 	//Public transports
 	 	ask GTFSreader[0] {
 	 		do assign_shapes;
@@ -283,6 +343,19 @@ global {
 	 	public_transport_graph <- _graph[0];
 	 	
 	 	write "Graphs created in " + (machine_time-t1)/1000.0 + " seconds.";
+	 }
+	 
+	 matrix<int> save_matrix_from_graph(graph gr, string file_name){
+	 	matrix<int> mat;
+	 	
+ 		write "Saving the graph shortest paths...";
+ 		float t <- machine_time;
+ 		mat <- all_pairs_shortest_path(gr);
+ 		//csv_file _file <- csv_file(name, mat);
+ 		save mat to:file_name format:"csv" rewrite:true header:false ;
+ 		write "Done in " + (machine_time-t)/1000.0 + " seconds.";
+	 	
+	 	return mat;
 	 }
 	 
 	 action init_public_transport {
@@ -326,32 +399,11 @@ global {
 			//save the starting time for information
 			experiment_init_time <- machine_time;
 		}
-		//TEST
-		/*if cycle = 350 {
-			list<pair<TransportStop, TransportTrip>> itinerary;
-			string n1 <- "Peries";
-			string n2 <- "Crampel";
-			TransportStop st1;
-			TransportStop st2;
-			
-			loop st over: TransportStop {
-				if st.real_name = n1 {
-					st1 <- st;
-				}else if st.real_name = n2 {
-					st2 <- st;
-				}
-			}
-
-			ask public_transport_graph {
-				itinerary <- get_itinerary_between(st1.location, st2.location);
-			}
-			
-			loop elem over: itinerary {
-				write elem.key.real_name + " via " + elem.value.route_id + " direction " + elem.value.direction_id;
-			}
-			do pause;
-		}*/
-		//
+		
+		write "\n The cycle took " + (machine_time-cycle_timer)/1000 + " seconds to simulate " + step + " seconds.\n";
+		cycle_timer <- machine_time;
+		
+		
 	 	if Person count(each.day_done) = length(Person) and empty(TransportTrip) {
 	 		write "\n The experiment took: " + (machine_time - experiment_init_time)/1000.0 + " seconds." color:#green;
 	 		
@@ -495,17 +547,19 @@ experiment "Display only" type: gui {
 	 */
 	output {
 		display main_window type: opengl {
-			species TransportStop refresh:false;
-			species TransportRoute refresh:false;
+			//species TransportStop refresh:false;
+			//species TransportRoute refresh:false;
 			//species Building refresh:false;
-			species Road refresh:false;
+			//species Road refresh:false;
+			
+			//species Person;
+			//species Car;
+			//species Bus;
+			//species Metro;
+			//species Tramway;
+			//species Teleo;
+			
 			//species TransportEdge;
-			species Person;
-			species Car;
-			species Bus;
-			species Metro;
-			species Tramway;
-			species Teleo;
 			overlay right: "Date: " + current_date  color: #orange;
 		}
 	}

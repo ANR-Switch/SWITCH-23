@@ -48,10 +48,10 @@ species Bus parent: Vehicle schedules: [] {
 			if !empty(passengers) {
 				write get_current_date() +  ": " + name + " has some passengers still inside even though we are in terminus! :" color:#red;
 				PublicTransportCard tc;
-				write last(trip.stops).real_name;
+				//write last(trip.stops).real_name;
 				loop p over: passengers {
 					tc <- PublicTransportCard(p.current_vehicle);
-					write tc.name + " wants to go to " + tc.stops[tc.itinerary_idx+1].real_name;
+					write tc.name + " of " + tc.owner.name + " wants to go to " + tc.stops[tc.itinerary_idx].real_name;
 					ask tc {
 						do get_out;
 					}
@@ -80,9 +80,7 @@ species Bus parent: Vehicle schedules: [] {
 			}
 		}
 		
-		loop p over: get_out {
-			//do remove_passenger(p);
-			
+		loop p over: get_out {			
 			tc <- PublicTransportCard(p.current_vehicle);
 			ask tc {
 				do get_out;
@@ -102,13 +100,12 @@ species Bus parent: Vehicle schedules: [] {
 			ask tc {
 				do get_in(myself);
 			}
-			//do add_passenger(p);
-			
-//			ask trip.stops[current_stop_idx] {
-//				remove PublicTransportCard(p.current_vehicle) from: waiting_persons;
-//			}
-		
-			write get_current_date() + ": " + name + " to " + trip.route_id + " takes passenger: " + p.name ;
+		}
+		//remove edge from graph
+		if current_stop_idx < length(trip.my_edges) {
+			ask trip.my_edges[current_stop_idx] {
+				do die;	
+			}
 		}
 	}
 	
@@ -130,7 +127,10 @@ species Bus parent: Vehicle schedules: [] {
 		do move_to(trip.stops[current_stop_idx].location);
 		
 		do take_passengers_out;
-		do take_passengers_in;
+		
+		if current_stop_idx < length(trip.stops){
+			do take_passengers_in;	
+		}
 	
 //		if get_current_date() >= trip.departure_times[current_stop_idx] {
 //			do go_to_next_stop;
