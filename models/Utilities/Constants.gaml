@@ -44,7 +44,7 @@ species Constants schedules: [] {
 	int deadlock_patience <- 2 const:true; //minutes
 	
 	//TransportGraph
-	int allowed_walking_distance <- 800 const:true; //meters to allow a "walk" connection between two stops in the public transport network
+	int allowed_walking_distance <- 100 const:true; //meters to allow a "walk" connection between two stops in the public transport network
 	
 	//TransportStop
 	float connection_weight <- 0.0 const:true; //in seconds has to be 0 for now

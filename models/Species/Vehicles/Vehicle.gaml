@@ -74,9 +74,11 @@ species Vehicle virtual: true skills: [scheduling] schedules: [] {
 		float distance <- current_road.shape.perimeter;
 		float mean_speed <- distance / (leave_date - log_entry_date);
 		mean_speed <- (mean_speed * 3.6) with_precision 1;
-		ask owner.journal {
+		/*ask owner.journal {
 			do write_in_journal(myself.owner.act_idx, myself, myself.current_road.name, myself.current_road.topo_id, round(distance), myself.log_entry_date, leave_date, mean_speed, _lateness);
-		}
+		}*/
+		
+		add string(owner.act_idx)+","+self.name+","+self.current_road.name+","+self.current_road.topo_id+","+round(distance)+","+self.log_entry_date+","+string(leave_date)+","+mean_speed+","+_lateness to: owner.journal_str;
 	}
 }
 

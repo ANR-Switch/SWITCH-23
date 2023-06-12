@@ -15,14 +15,13 @@ import "../Species/Transports/TransportTrip.gaml"
 import "../Species/Transports/TransportStop.gaml"
 
 species GTFSreader schedules: [] {
-	string file_path <- "../../includes/gtfs/";
 	
 	//files
-	string stops_file <- file_path + "stops.txt";
-	string trips_file <- file_path + "trips.txt";
-	string stop_times_file <- file_path + "stop_times.txt";
-	string routes_file <- file_path + "routes.txt";
-	string shapes_file <- file_path + "shapes.txt";
+	string stops_file <- gtfs_file + "stops.txt";
+	string trips_file <- gtfs_file + "trips.txt";
+	string stop_times_file <- gtfs_file + "stop_times.txt";
+	string routes_file <- gtfs_file + "routes.txt";
+	string shapes_file <- gtfs_file + "shapes.txt";
 	
 	csv_file stops_csv <- csv_file(stops_file, ",", true);
 	csv_file trips_csv <- csv_file(trips_file, ",", true);
@@ -63,15 +62,16 @@ species GTFSreader schedules: [] {
 	action create_routes {
 		write "Creating the routes..."; 
 		
-		string ligneA_id <- "line:61"; //names in csv
-		string ligneB_id <- "line:69";
+		//string ligneA_id <- "line:61"; //names in csv
+		//string ligneB_id <- "line:69";
 		
 		create TransportRoute from: routes_csv with: [
 			route_id::string(read("route_id")),
 			short_name::string(read("route_short_name")),
 			long_name::string(read("route_long_name")),
 			type::int(read("route_type")),
-			color::rgb("#"+read("route_color"))
+			color::rgb(#purple)
+			//color::rgb("#"+read("route_color"))
 		]  {			
 			//map
 			add route_id::self to: myself.routes_map;	

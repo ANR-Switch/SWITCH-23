@@ -48,10 +48,18 @@ species Bus parent: Vehicle schedules: [] {
 			if !empty(passengers) {
 				write get_current_date() +  ": " + name + " has some passengers still inside even though we are in terminus! :" color:#red;
 				PublicTransportCard tc;
-				//write last(trip.stops).real_name;
+				list<Person> get_out;
+				
 				loop p over: passengers {
 					tc <- PublicTransportCard(p.current_vehicle);
-					write tc.name + " of " + tc.owner.name + " wants to go to " + tc.stops[tc.itinerary_idx].real_name;
+		
+					if trip.stops[current_stop_idx].real_name = tc.stops[tc.itinerary_idx].real_name {
+						add p to: get_out;
+					}
+				}
+				
+				loop p over: get_out {			
+					tc <- PublicTransportCard(p.current_vehicle);
 					ask tc {
 						do get_out;
 					}

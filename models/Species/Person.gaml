@@ -53,7 +53,8 @@ species Person skills: [scheduling] schedules: [] {
 	//bool is_going_in_ext_zone <- false; //used for display
 	
 	//
-	Journal journal;
+	list<string> journal_str;
+	//Journal journal;
 	bool day_done <- false; 
 	
 	float walking_speed <- 1.39 ; //#meter / #second ;
@@ -69,10 +70,10 @@ species Person skills: [scheduling] schedules: [] {
 		create Feet returns: f;
 	  	my_feet <- f[0];
 		//
-		create Journal returns: j {
-			owner <- myself;
-		}
-		journal <- j[0];
+//		create Journal returns: j {
+//			owner <- myself;
+//		}
+		//journal <- j[0];
 	}
 
 	
@@ -225,12 +226,12 @@ species Person skills: [scheduling] schedules: [] {
 //    	write get_current_date() + ": " + name + " starts doing: " + current_activity.title;
     	
     	//TODO
-    	float lateness <- 0.0;
-    	loop t over: journal.event_log {
-    		if t.trip_idx = act_idx {
-    			lateness <- lateness + t.lateness;
-    		}
-    	}
+//    	float lateness <- 0.0;
+//    	loop t over: journal.event_log {
+//    		if t.trip_idx = act_idx {
+//    			lateness <- lateness + t.lateness;
+//    		}
+//    	}
     	
     	//register next activity
     	if act_idx + 1 = length(activities) {
@@ -459,19 +460,19 @@ species Person skills: [scheduling] schedules: [] {
 
    
    action highlight_path(int i){
-   		//probably deprecated
-   	 	bool found <- false;
-   		loop t over: journal.event_log {
-   			if t.trip_idx = i {
-	   			found <- true;
-	   			ask Road(t.road_gama_id) {
-	   				color <- #red;
-	   			}
-   			}
-	   	}
-	   	if !found {
-	   		write "Cannot find a matching path to highlight." color:#red;
-	   	}
+//   		//probably deprecated
+//   	 	bool found <- false;
+//   		loop t over: journal.event_log {
+//   			if t.trip_idx = i {
+//	   			found <- true;
+//	   			ask Road(t.road_gama_id) {
+//	   				color <- #red;
+//	   			}
+//   			}
+//	   	}
+//	   	if !found {
+//	   		write "Cannot find a matching path to highlight." color:#red;
+//	   	}
    }
    
    action link_event_manager (EventManager e){

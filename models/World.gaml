@@ -26,8 +26,8 @@ import "Species/Map/Building.gaml"
 
 global {
 	//FILES
-//	string dataset_path <- "../includes/Castanet-Tolosan/CASTANET-TOLOSAN/";
-	string dataset_path <- "../includes/agglo/";
+	string dataset_path <- "../includes/Dijon/";
+	//string dataset_path <- "../includes/agglo/";
 	
 	shape_file shape_roads_CT <- shape_file(dataset_path + "roads.shp");
 	
@@ -35,10 +35,11 @@ global {
 	
 	geometry shape <- envelope(shape_roads_CT);
 	
+	string gtfs_file <- dataset_path + "gtfs/";
 	csv_file population <- csv_file("../includes/population/population.csv", ",", true);
 	
 	//SIM	
-	float step <- 3600 #seconds parameter: "Step"; //86400 for a day
+	float step <- 60 #seconds parameter: "Step"; //86400 for a day
 	float simulated_days <- 1 #days parameter: "Simulated_days";
 	float experiment_init_time;
 	
@@ -547,19 +548,21 @@ experiment "Display only" type: gui {
 	 */
 	output {
 		display main_window type: opengl {
-			//species TransportStop refresh:false;
-			//species TransportRoute refresh:false;
-			//species Building refresh:false;
-			//species Road refresh:false;
+			species TransportStop refresh:false;
+			species TransportRoute refresh:false;
+//			species Building refresh:false;
+//			species Road refresh:false;
 			
 			//species Person;
 			//species Car;
-			//species Bus;
-			//species Metro;
-			//species Tramway;
-			//species Teleo;
+			//species Bike;
 			
-			//species TransportEdge;
+			species Bus;
+			species Metro;
+			species Tramway;
+			species Teleo;
+			
+			species TransportEdge;
 			overlay right: "Date: " + current_date  color: #orange;
 		}
 	}

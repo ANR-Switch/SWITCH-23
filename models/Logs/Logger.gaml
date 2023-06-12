@@ -73,9 +73,11 @@ species Logger skills: [scheduling] {
 			write "It can take a while...";
 			bool erased <- false;
 			
+			list<string> header <- [];
+			save header to: journals_file format:"csv" rewrite:true header:false;
 			loop p over: Person  {
 				write "Saving " + p.name + "...";
-				if !erased {
+				/*if !erased {
 					ask p.journal {
 						do save(myself.journals_file, true);
 					}
@@ -84,7 +86,8 @@ species Logger skills: [scheduling] {
 					ask p.journal {
 						do save(myself.journals_file, false);
 					}
-				}
+				}*/
+				save p.journal_str to: roads_file format:"csv" rewrite:true header:false;
 			}
 			write "Done in " + (machine_time-t1)/1000 + "s.";	
 		}
