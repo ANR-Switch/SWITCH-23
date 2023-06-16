@@ -26,8 +26,8 @@ import "Species/Map/Building.gaml"
 
 global {
 	//FILES
-	string dataset_path <- "../includes/Dijon/";
-	//string dataset_path <- "../includes/agglo/";
+	//string dataset_path <- "../includes/Dijon/";
+	string dataset_path <- "../includes/agglo/";
 	
 	shape_file shape_roads_CT <- shape_file(dataset_path + "roads.shp");
 	
@@ -39,7 +39,7 @@ global {
 	csv_file population <- csv_file("../includes/population/population.csv", ",", true);
 	
 	//SIM	
-	float step <- 60 #seconds parameter: "Step"; //86400 for a day
+	float step <- 3600 #seconds parameter: "Step"; //86400 for a day
 	float simulated_days <- 1 #days parameter: "Simulated_days";
 	float experiment_init_time;
 	
@@ -51,7 +51,7 @@ global {
 	//modality
 	float feet_weight <- 0.05 parameter: "Feet";
 	float bike_weight <- 0.10 parameter: "Bike";
-	float car_weight <- 0.65 parameter: "Car";
+	float car_weight  <- 0.65 parameter: "Car";
 	float public_transport_weight <- 0.2 parameter: "Public_Transport";
 	//highlight path
 	int Person_idx <- 0 parameter: "Person_idx";
@@ -145,7 +145,7 @@ global {
 		write "Persons...";
 		float t1 <- machine_time;
 		
-		loop i from:0 to: 4 {
+		loop i from:0 to: 0 {
 		
 			create Person from: population with: [
 				/*first_name::read("nom"),
@@ -280,6 +280,7 @@ global {
 	 	road_subset <- Road where (each.max_speed < 70/3.6);
 	 	road_weights_map <- road_subset as_map (each:: (each.shape.perimeter));
 	 	feet_road_graph <- as_edge_graph(road_subset) with_weights road_weights_map;
+	 	feet_road_graph <- main_connected_component(feet_road_graph);
 	 	write "Pedestrians can use " + length(road_subset) + " road segments.";
 	 	
 	 	//bike
@@ -298,35 +299,9 @@ global {
 	 	road_weights_map <- road_subset as_map (each:: (each.shape.perimeter/each.max_speed));
 	 	car_road_graph <- as_edge_graph(road_subset) with_weights road_weights_map;
 	 	car_road_graph <- directed(car_road_graph);
-	 	//write "Cars can use " + length(road_subset) + " road segments.";
-	 	//this part is to remove the non convex zones of the graph
-	 	list connected_comp <- car_road_graph connected_components_of true;
-	 	int max_size <- 0;
-	 	list main_comp ;
-	 	loop e over: connected_comp {
-	 		if length(e) > max_size {
-	 			max_size <- length(e);
-	 			main_comp <- e;
-	 		}
-	 	}
-	 	write "The road graph main component contains " + length(main_comp);
-	 	loop road over: main_comp {
-	 		Road(road).main_comp <- true;
-	 		//Road(road).color <- #white;
-	 	}
 	 	
-	 	loop r over: Road where !(each.main_comp) {
- 			//write " a road dies";
- 			ask r {
- 				do die;
- 			}
-	 	}	 	
-	 	
-	 	//car graph connex
-	 	road_subset <- Road where (each.car_track);
-	 	road_weights_map <- road_subset as_map (each:: (each.shape.perimeter/each.max_speed));
-	 	car_road_graph <- as_edge_graph(road_subset) with_weights road_weights_map;
-	 	car_road_graph <- directed(car_road_graph);
+	 	car_road_graph <- main_connected_component(car_road_graph);
+
 	 	write "Cars can use " + length(road_subset) + " road segments.";
 	 	
 	 	if save_matrix_as_csv {
@@ -549,7 +524,7 @@ experiment "Display only" type: gui {
 	output {
 		display main_window type: opengl {
 			species TransportStop refresh:false;
-			species TransportRoute refresh:false;
+			//species TransportRoute refresh:false;
 //			species Building refresh:false;
 //			species Road refresh:false;
 			
@@ -561,7 +536,7 @@ experiment "Display only" type: gui {
 			species Metro;
 			species Tramway;
 			species Teleo;
-			
+						
 			species TransportEdge;
 			overlay right: "Date: " + current_date  color: #orange;
 		}

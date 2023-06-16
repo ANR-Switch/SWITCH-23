@@ -74,12 +74,16 @@ species TransportGraph skills: [scheduling] schedules: [] {
 		
 		//update graph
 		if d > last_update {
-			list<TransportEdge> available_edges <- TransportEdge where(each.connection = false and each.source_arrival_date > d);
-			list<TransportEdge> connections <- TransportEdge where(each.connection);
-			
-			weights <- (connections + available_edges) as_map(each::(each.weight));
+			//list<TransportEdge> available_edges <- TransportEdge where(each.connection = false and each.source_arrival_date > d);
+			//list<TransportEdge> connections <- TransportEdge where(each.connection);
+	
+			list<TransportEdge> available_edges <- TransportEdge where(each.connection or (each.connection = false and each.source_arrival_date > get_current_date()));
+		
+			weights <- available_edges as_map(each::(each.weight));
 			public_transport_graph <- as_edge_graph(weights.keys) with_weights weights;
 			public_transport_graph <- directed(public_transport_graph);
+			
+			public_transport_graph <- main_connected_component(public_transport_graph);
 			
 			last_update <- d;	
 		}

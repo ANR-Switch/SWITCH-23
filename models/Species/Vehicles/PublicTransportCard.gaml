@@ -106,6 +106,7 @@ species PublicTransportCard parent: Vehicle schedules: [] {
 //					do wait_to_stop;
 				}else{
 					write get_current_date() + ": " + owner.name + " called goto on " + name + " but the path computed is empty." color:#red;
+					write distance_to(owner.location, owner.current_destination);
 					owner.location <- owner.current_destination;
 					add get_current_date() + ": got an empty itinerary!" to: owner.journal_str;
 					ask owner {

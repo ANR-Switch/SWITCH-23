@@ -70,8 +70,8 @@ species GTFSreader schedules: [] {
 			short_name::string(read("route_short_name")),
 			long_name::string(read("route_long_name")),
 			type::int(read("route_type")),
-			color::rgb(#purple)
-			//color::rgb("#"+read("route_color"))
+			//color::rgb(#purple)
+			color::rgb("#"+read("route_color"))
 		]  {			
 			//map
 			add route_id::self to: myself.routes_map;	
