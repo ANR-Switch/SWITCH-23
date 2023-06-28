@@ -236,7 +236,7 @@ species Person skills: [scheduling] schedules: [] {
     	//register next activity
     	if act_idx + 1 = length(activities) {
 			//daydone
-			write get_current_date() + ": " + name + " ended its day correctly.";
+			//write get_current_date() + ": " + name + " ended its day correctly.";
 			day_done <- true;
 		}else if act_idx + 1 < length(activities){
 				date d <- starting_dates[act_idx+1] add_minutes rnd(-floor(Constants[0].starting_time_randomiser/2), floor(Constants[0].starting_time_randomiser/2));

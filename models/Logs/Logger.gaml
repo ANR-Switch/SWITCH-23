@@ -29,6 +29,7 @@ species Logger skills: [scheduling] {
 	string roads_file <- output_path + roads_output_file ;
 	string traffic_file <- output_path + traffic_output_file ;
 	string journals_file <- output_path + journals_output_file ;
+	string journals_pt_file <- output_path + "journals_pt.txt";
 	
 	//msg
 	list full_road_msg_csv <- [];
@@ -41,7 +42,7 @@ species Logger skills: [scheduling] {
 	string s;
 
 	
-	action log_roads{
+	action real_time_log_roads{
 		float ratio;
 		list new_msg <- [];
 		
@@ -57,7 +58,7 @@ species Logger skills: [scheduling] {
 		add new_msg to: full_road_msg_csv;
 	}
 	
-	action log_traffic {
+	action real_time_log_traffic {
 		int cars <- Person count(each.is_moving_chart and species(each.current_vehicle)=Car);
 		int bikes <- Person count(each.is_moving_chart and species(each.current_vehicle)=Bike);
 		int feet <- Person count(each.is_moving_chart and species(each.current_vehicle)=Feet);
@@ -73,21 +74,22 @@ species Logger skills: [scheduling] {
 			write "It can take a while...";
 			bool erased <- false;
 			
-			list<string> header <- [];
+			list<string> header <- ["act_idx", "person name", "road name", "road topo id", "distance", "entry_date", "leave_date", "mean speed", "lateness"];
 			save header to: journals_file format:"csv" rewrite:true header:false;
+			save "" to: journals_pt_file format:"txt" rewrite:true header:false;
+			
 			loop p over: Person  {
-				write "Saving " + p.name + "...";
-				/*if !erased {
-					ask p.journal {
-						do save(myself.journals_file, true);
+				if species(p.vehicles[0]) = PublicTransportCard {
+					save p.name to: journals_pt_file format:"txt" rewrite:false header:false;
+					loop _line over: p.journal_str {
+						save _line to: journals_pt_file format:"txt" rewrite:false header:false;
 					}
-					erased <- true;	
+					save "" to: journals_pt_file format:"txt" rewrite:false header:false;
 				}else{
-					ask p.journal {
-						do save(myself.journals_file, false);
+					loop _line over: p.journal_str {
+						save _line to: journals_file format:"csv" rewrite:false header:false;
 					}
-				}*/
-				save p.journal_str to: roads_file format:"csv" rewrite:true header:false;
+				}
 			}
 			write "Done in " + (machine_time-t1)/1000 + "s.";	
 		}
@@ -170,10 +172,10 @@ species Logger skills: [scheduling] {
 	
 	reflex log {
 		if log_roads_bool{
-			do log_roads();
+			do real_time_log_roads();
 		}
 		if log_traffic_bool {
-			do log_traffic();
+			do real_time_log_traffic();
 		}
 	}
 }

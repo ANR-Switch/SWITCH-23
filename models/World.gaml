@@ -36,7 +36,7 @@ global {
 	geometry shape <- envelope(shape_roads_CT);
 	
 	string gtfs_file <- dataset_path + "gtfs/";
-	csv_file population <- csv_file("../includes/population/population.csv", ",", true);
+	csv_file population <- csv_file("../includes/population/population_test100.csv", ",", true);
 	
 	//SIM	
 	float step <- 3600 #seconds parameter: "Step"; //86400 for a day
@@ -50,7 +50,7 @@ global {
 
 	//modality
 	float feet_weight <- 0.05 parameter: "Feet";
-	float bike_weight <- 0.10 parameter: "Bike";
+	float bike_weight <- 0.1 parameter: "Bike";
 	float car_weight  <- 0.65 parameter: "Car";
 	float public_transport_weight <- 0.2 parameter: "Public_Transport";
 	//highlight path
@@ -66,7 +66,7 @@ global {
 	graph bike_road_graph;
 	TransportGraph public_transport_graph;
 	
-	int road_importance <- 7 const:true; //considers roads of importance less than this
+	int road_importance <- 7 const:true; //considers roads of importance less than or eq to this
 	bool save_matrix_as_csv <- false;
 	string matrix_path <- "C:\\Users\\coohauterv\\git\\SWITCH-23\\includes\\matrices\\";
 	matrix<int> car_shortest_paths;
@@ -96,7 +96,10 @@ global {
 		do init_event_managers; //good to do first
 		do init_buildings;
 	 	do init_roads;
-	 	do init_public_transport;
+	 	
+	 	if Constants[0].public_transports {
+	 		do init_public_transport;	
+	 	}
 	 	
 	 	do init_graphs; //should be done after roads and public transports
 	 	
@@ -114,14 +117,6 @@ global {
 		write "Simulation is ready. In " + (machine_time - sim_init_time)/1000.0 + " seconds." ;
 	}
 	
-
-	
-//	action link_roads_to_event_manager(EventManager e){
-//		//to be used only if the agents possess the scheduling skill
-//		loop r over: Road {
-//			r.event_manager <- e;
-//		}
-//	}
 	
 	action init_event_managers{
 		create EventManager number: nb_event_managers;
@@ -172,7 +167,7 @@ global {
 				
 	//			//vehicle
 				do choose_vehicles;
-	//			pasbesoin do link_event_manager(EventManager[0]); //after choose vehicle
+				
 	//			//activities
 				do register_activities; //after link to eventmanager
 	
@@ -262,9 +257,6 @@ global {
 			if oneway = "Sens inverse" {				
 				shape <- polyline(reverse(shape.points));
 			}
-			if oneway = "Sens inverse" or oneway = "Sens direct" {
-				color <- #orange; //TODO remove
-			}
 		}
 		write "There are " + length(Road) + " Roads loaded in " + (machine_time-t1)/1000.0 + " seconds.";
 		write "" + length(Road where each.had_to_increase_capacity) + " roads had to increase their maximum capacity." color:#orange;
@@ -277,7 +269,7 @@ global {
 	 	map<Road, float> road_weights_map;
 	 	
 	 	//feet 
-	 	road_subset <- Road where (each.max_speed < 70/3.6);
+	 	road_subset <- Road where (each.max_speed < 60/3.6);
 	 	road_weights_map <- road_subset as_map (each:: (each.shape.perimeter));
 	 	feet_road_graph <- as_edge_graph(road_subset) with_weights road_weights_map;
 	 	feet_road_graph <- main_connected_component(feet_road_graph);
@@ -295,28 +287,38 @@ global {
 	 	write "Cyclists can use " + length(road_subset) + " road segments.";
 	 	
 	 	//car
-	 	road_subset <- Road where (each.car_track and each.importance < road_importance);
+	 	road_subset <- Road where (each.car_track and each.importance <= road_importance);
 	 	road_weights_map <- road_subset as_map (each:: (each.shape.perimeter/each.max_speed));
 	 	car_road_graph <- as_edge_graph(road_subset) with_weights road_weights_map;
 	 	car_road_graph <- directed(car_road_graph);
 	 	
+	 	//estimate for info
+		int compo <- length(connected_components_of(car_road_graph));
+		if compo != 1 {
+			write "There are " + compo + " components of the car-road graph before keeping the main one" color: #orange;
+		}
+		//
+	 	
 	 	car_road_graph <- main_connected_component(car_road_graph);
 
-	 	write "Cars can use " + length(road_subset) + " road segments.";
+	 	write "Cars can use " + length(car_road_graph) + " road segments.";
 	 	
 	 	if save_matrix_as_csv {
 	 		car_shortest_paths <- save_matrix_from_graph(car_road_graph, matrix_path+"car_road_matrix" + string(road_importance) + ".csv");
 	 	}else{
 	 		//car_shortest_paths <- matrix(csv_file(matrix_path+"car_road_matrix" + string(road_importance) + ".csv"));
 	 	}
-	 	//Public transports
-	 	ask GTFSreader[0] {
-	 		do assign_shapes;
-	 	}
-	 	create TransportGraph returns: _graph {
-	 		event_manager <- EventManager[0];
-	 	}
-	 	public_transport_graph <- _graph[0];
+	 	
+	 	if Constants[0].public_transports {
+		 	//Public transports
+		 	ask GTFSreader[0] {
+		 		do assign_shapes;
+		 	}
+		 	create TransportGraph returns: _graph {
+		 		event_manager <- EventManager[0];
+		 	}
+		 	public_transport_graph <- _graph[0];	
+		 }
 	 	
 	 	write "Graphs created in " + (machine_time-t1)/1000.0 + " seconds.";
 	 }
@@ -370,21 +372,27 @@ global {
     	return r_list;
     }
 	 
+	 /*
+	  * REFLEX
+	  */
 	 reflex { 
 		if cycle = 0 {
 			//save the starting time for information
 			experiment_init_time <- machine_time;
 		}
 		
-		write "\n The cycle took " + (machine_time-cycle_timer)/1000 + " seconds to simulate " + step + " seconds.\n";
+		write "\n-> The cycle took " + (machine_time-cycle_timer)/1000 + " seconds to simulate " + step + " seconds.";
+		write "-> Sim_time/Real_time ratio: " + int((1000*step)/(machine_time-cycle_timer)) ;
 		cycle_timer <- machine_time;
+		write "-> Current simulation date : " + current_date + "\n";
 		
 		
-	 	if Person count(each.day_done) = length(Person) and empty(TransportTrip) {
+	 	if Person count(each.day_done) = length(Person) and TransportTrip count(each.alive) = 0 {
 	 		write "\n The experiment took: " + (machine_time - experiment_init_time)/1000.0 + " seconds." color:#green;
 	 		
 	 		//LOGS
 	 		if !empty(Logger) {
+	 			write "Logging, please wait...";
 		 		ask Logger[0] {
 		 			do save_real_time_logs;
 		 			do save_journal_logs;
@@ -523,21 +531,23 @@ experiment "Display only" type: gui {
 	 */
 	output {
 		display main_window type: opengl {
-			species TransportStop refresh:false;
-			//species TransportRoute refresh:false;
+//			species TransportStop refresh:false;
+//			species TransportRoute refresh:false;
+//			species TransportEdge;
+			
 //			species Building refresh:false;
 //			species Road refresh:false;
 			
-			//species Person;
-			//species Car;
-			//species Bike;
+//			species Person;
+//			species Car;
+//			species Bike;
 			
-			species Bus;
-			species Metro;
-			species Tramway;
-			species Teleo;
+//			species Bus;
+//			species Metro;
+//			species Tramway;
+//			species Teleo;
 						
-			species TransportEdge;
+			
 			overlay right: "Date: " + current_date  color: #orange;
 		}
 	}

@@ -29,7 +29,7 @@ species TransportTrip skills: [scheduling] schedules: [] {
 	int direction_id;
 	int shape_id;
 	TransportRoute transport_route;
-	
+	bool alive <- true;
 	//only useful for bus
 	list<list<Road>> bus_path;
 	
@@ -45,14 +45,15 @@ species TransportTrip skills: [scheduling] schedules: [] {
 	action schedule_departure_time {		
 		assert length(stops) = length(departure_times);
 		if !empty(departure_times) {
-			//register to graph a bit before our departure fro graph search
-			if get_current_date() < departure_times[0] add_minutes - registration_minutes {
-				do later the_action:"register_to_graph" at: departure_times[0] add_minutes - registration_minutes;
-			}else{
-				write 'A trnsportTrip register itself late on schedule, this should not happen' color:#red;
-				do later the_action:"register_to_graph" at: get_current_date() add_seconds 1;
+			if Constants[0].dynamic_public_transport_graph {
+				//register to graph a bit before our departure fro graph search
+				if get_current_date() < departure_times[0] add_minutes - registration_minutes {
+					do later the_action:"register_to_graph" at: departure_times[0] add_minutes - registration_minutes;
+				}else{
+					write 'A trnsportTrip register itself late on schedule, this should not happen' color:#red;
+					do later the_action:"register_to_graph" at: get_current_date() add_seconds 1;
+				}
 			}
-			
 			
 			//departure!
 			do later the_action:"start_trip" at:departure_times[0];
@@ -87,7 +88,7 @@ species TransportTrip skills: [scheduling] schedules: [] {
 					driving_color <- myself.transport_route.color;
 					route <- myself.transport_route.long_name;
 					
-					do init_vehicle(Person[0]);
+					do init_vehicle(Person[0]); //?
 										
 					do take_passengers_in;
 					do go_to_next_stop;
@@ -100,9 +101,7 @@ species TransportTrip skills: [scheduling] schedules: [] {
 					trip <- myself;
 					location <- trip.stops[0].location;
 					color <- myself.transport_route.color;
-					
-//					write get_current_date() + ": " + myself.transport_route.long_name + " starts a trip with: " + name color:color;
-					
+										
 					do take_passengers_in;
 					do go_to_next_stop;
 				} 
@@ -143,11 +142,15 @@ species TransportTrip skills: [scheduling] schedules: [] {
 		
 	}
 	
-	action end_trip {		
-		ask my_edges {
-			do die;
+	action end_trip {
+		if Constants[0].dynamic_public_transport_graph {		
+			ask my_edges {
+				do die;
+			}
+			do die;	
+		}else{
+			alive <- false;
 		}
-		do die;
 	}
 	
 	action add_stop(string departure_str, TransportStop ts){

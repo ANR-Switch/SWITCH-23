@@ -44,16 +44,16 @@ species Bus parent: Vehicle schedules: [] {
 			do later the_action: "arrive_at_destination" at: trip.departure_times[current_stop_idx];
 		}else{
 			//we are in terminus
-			//
 			if !empty(passengers) {
 				write get_current_date() +  ": " + name + " has some passengers still inside even though we are in terminus! :" color:#red;
+				write passengers;
 				PublicTransportCard tc;
 				list<Person> get_out;
 				
 				loop p over: passengers {
 					tc <- PublicTransportCard(p.current_vehicle);
 		
-					if trip.stops[current_stop_idx].real_name = tc.stops[tc.itinerary_idx].real_name {
+					if last(trip.stops).real_name = tc.stops[tc.itinerary_idx].real_name {
 						add p to: get_out;
 					}
 				}
@@ -110,7 +110,7 @@ species Bus parent: Vehicle schedules: [] {
 			}
 		}
 		//remove edge from graph
-		if current_stop_idx < length(trip.my_edges) {
+		if current_stop_idx < length(trip.my_edges) and Constants[0].dynamic_public_transport_graph {
 			ask trip.my_edges[current_stop_idx] {
 				do die;	
 			}

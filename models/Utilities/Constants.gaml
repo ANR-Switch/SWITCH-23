@@ -15,6 +15,9 @@ species Constants schedules: [] {
 	 */
 	int simulation_reduction_factor <- 1 const:true;
 	
+	//false to avoid charging all the public-transport-related agents
+	bool public_transports <- true const: true;
+	
 	//logs
 	bool log_journals <- true const:true;
 	bool log_roads <- false const:true;
@@ -36,7 +39,7 @@ species Constants schedules: [] {
 	bool double_the_roads <- true const:true; //true if the database does not pre-double the roads for both direction, in this case we do it at initial time
 	float minimum_road_capacity_required <- car_size const:true; //size of a car or a bus
 	
-	float speed_factor <- 0.9 const:true;
+	float speed_factor <- 1.0 const:true;
 	float inflow_delay <- 2.0 const: true;
 	float outflow_delay <- 3.0 const: true;
 	float alpha <- 0.15 const:true;
@@ -44,6 +47,7 @@ species Constants schedules: [] {
 	int deadlock_patience <- 2 const:true; //minutes
 	
 	//TransportGraph
+	bool dynamic_public_transport_graph <- false const:true;
 	int allowed_walking_distance <- 100 const:true; //meters to allow a "walk" connection between two stops in the public transport network
 	
 	//TransportStop

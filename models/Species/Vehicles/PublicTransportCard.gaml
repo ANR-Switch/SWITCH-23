@@ -95,7 +95,7 @@ species PublicTransportCard parent: Vehicle schedules: [] {
 					}
 					
 					//log
-					string s <- get_current_date() + " itinerary: ";
+					string s <- get_current_date() + ": trip: "+ owner.act_idx + " itinerary: ";
 					loop e over: stops {
 						s <- s + e.real_name + ";";
 					}
@@ -122,9 +122,7 @@ species PublicTransportCard parent: Vehicle schedules: [] {
 		}
 	}
 	
-	action get_in(Vehicle v) {
-		current_public_transport <- v;
-		
+	action get_in(Vehicle v) {		
 		ask v {
 			do add_passenger(myself.owner);
 		}
@@ -139,6 +137,7 @@ species PublicTransportCard parent: Vehicle schedules: [] {
 			add s to: owner.journal_str;
 			
 			itinerary_idx <- itinerary_idx + 1;	
+			current_public_transport <- v;
 		}
 	}
 	
@@ -146,7 +145,20 @@ species PublicTransportCard parent: Vehicle schedules: [] {
 		ask current_public_transport {
 			do remove_passenger(myself.owner);
 		}	
-		add get_current_date() + ": got out of " + current_public_transport.name + " at stop " + stops[itinerary_idx-1].real_name to: owner.journal_str;
+		switch species(current_public_transport) {
+			match Bus {
+				add get_current_date() + ": got out of " + current_public_transport.name + " at stop " + Bus(current_public_transport).trip.stops[Bus(current_public_transport).current_stop_idx].real_name to: owner.journal_str;
+			}
+			match Metro {
+				add get_current_date() + ": got out of " + current_public_transport.name + " at stop " + Metro(current_public_transport).trip.stops[Metro(current_public_transport).current_stop_idx].real_name to: owner.journal_str;
+			}
+			match Tramway {
+				add get_current_date() + ": got out of " + current_public_transport.name + " at stop " + Tramway(current_public_transport).trip.stops[Tramway(current_public_transport).current_stop_idx].real_name to: owner.journal_str;
+			}
+			match Teleo {
+				add get_current_date() + ": got out of " + current_public_transport.name + " at stop " + Teleo(current_public_transport).trip.stops[Teleo(current_public_transport).current_stop_idx].real_name to: owner.journal_str;
+			}
+		}
 		
 		owner.color <- #black;
 		current_public_transport <- nil;
@@ -202,18 +214,19 @@ species PublicTransportCard parent: Vehicle schedules: [] {
 	action recompute_itinerary(point old_position) {
 		//check if we got our correspondance since we started to wait
 		if !empty(stops) and old_position = owner.location and current_public_transport = nil {
-			//recompute
-			/*write get_current_date() + ": " + name + " recomputed its path because it is stuck at " + stops[itinerary_idx].real_name color:#orange;
-			write get_current_date() + ": " + name + " wants to take " + routes[itinerary_idx] + " to go down at " + stops[itinerary_idx+1].real_name color:#orange;
-			write stops;
-			write routes;
-			write "";*/
-			add get_current_date() + ": recomputed its path because it seems stuck" to: owner.journal_str;
-			
-			ask stops[itinerary_idx] {
-				do remove_waiting_person(myself);
+			//recompute			
+			if TransportTrip count(each.alive) != 0 {
+				add get_current_date() + ": recomputed its path because it seems stuck" to: owner.journal_str;
+				ask stops[itinerary_idx] {
+					do remove_waiting_person(myself);
+				}
+				do goto(my_destination);	
+			}else{
+				//there are no public transports no more
+				write get_current_date() + ": " + owner.name +" is stuck and there are no public transports available at this hour." color:#orange;
+				add get_current_date() + ": is stuck and there are no public transports available at this hour." to: owner.journal_str;
+				do end_itinerary;
 			}
-			do goto(my_destination);
 		}else{
 			//write "all good" color:#green;
 		}

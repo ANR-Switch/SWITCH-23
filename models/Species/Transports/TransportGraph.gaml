@@ -15,6 +15,8 @@ species TransportGraph skills: [scheduling] schedules: [] {
 	map<TransportEdge, float> weights;
 	date last_update <- starting_date;
 	
+	list<int> registered_routes;
+	
 	init {
 		write "Init of the public transport graph...";
 		
@@ -47,6 +49,7 @@ species TransportGraph skills: [scheduling] schedules: [] {
 		}
 		//
 		
+		/* This part is for "walking distance" connections between different stops
 		loop st1 over: TransportStop {
 		 	loop st2 over: TransportStop {
 	 			if  (distance_to(st1.location, st2.location)) < Constants[0].allowed_walking_distance and (st1 != st2) and (st1.location != st2.location) {
@@ -61,7 +64,12 @@ species TransportGraph skills: [scheduling] schedules: [] {
 	 			}
 		 	}
 		}
+		*/
 		//
+		
+		if ! Constants[0].dynamic_public_transport_graph {
+			do build_static_graph;
+		}
 		
 		write "Done.";
 	}
@@ -72,10 +80,8 @@ species TransportGraph skills: [scheduling] schedules: [] {
 		list<pair<TransportStop, TransportTrip>> itinerary;
 		date d <- get_current_date();
 		
-		//update graph
-		if d > last_update {
-			//list<TransportEdge> available_edges <- TransportEdge where(each.connection = false and each.source_arrival_date > d);
-			//list<TransportEdge> connections <- TransportEdge where(each.connection);
+		//update graph main component
+		if Constants[0].dynamic_public_transport_graph and d > last_update {
 	
 			list<TransportEdge> available_edges <- TransportEdge where(each.connection or (each.connection = false and each.source_arrival_date > get_current_date()));
 		
@@ -98,6 +104,7 @@ species TransportGraph skills: [scheduling] schedules: [] {
 					if TransportEdge(_elem).walk_trip {
 						add  TransportEdge(_elem).source::nil to: itinerary;
 					}
+					current_edge_route_id <- nil;
 				}else if TransportEdge(_elem).trip.route_id != current_edge_route_id {
 					add  TransportEdge(_elem).source::TransportEdge(_elem).trip to: itinerary;
 					current_edge_route_id <- TransportEdge(_elem).trip.route_id;
@@ -128,18 +135,8 @@ species TransportGraph skills: [scheduling] schedules: [] {
 				}	
 			}
 			*/
-			//to test
-//			if last(itinerary).key.real_name = "Andromède-Lycée" {
-//				loop e over: p.edges {
-//					TransportEdge t <- TransportEdge(e);
-//					if t.trip != nil {
-//						write t.source.real_name + "-" + t.target.real_name + " via " + t.trip.trip_id + " " +t.connection;	
-//					}else{
-//						write t.source.real_name + "-" + t.target.real_name +  " " +t.connection color:#pink;	
-//					}
-//				}
-//			}
-			if all_match(itinerary, each.value = nil) {
+
+			/*if all_match(itinerary, each.value = nil) {
 				//this happens if the itinerary is only made of connections, in this case, the person should just walk
 				//it seems to happen when it's very late and the transporttrip are all dead
 				return nil;
@@ -147,13 +144,36 @@ species TransportGraph skills: [scheduling] schedules: [] {
 			if length(itinerary) = 2 and itinerary[0].key.real_name = itinerary[1].key.real_name {
 				//weird case that happens with the graph
 				return nil;
-			}
+			}*/
 			return itinerary;	
 		}else{
 			return nil;
 		}
 	}
 	
+	action build_static_graph {
+		loop tt over: TransportTrip {
+			if !(registered_routes contains tt.shape_id) {
+				ask tt {
+					do register_to_graph;
+				}
+				add tt.shape_id to: registered_routes;
+			}
+		}
+		
+		weights <- TransportEdge as_map(each::each.weight);
+		public_transport_graph <- as_edge_graph(weights.keys) with_weights weights;
+		public_transport_graph <- directed(public_transport_graph);
+		
+		//estimate for info
+		int compo <- length(connected_components_of(public_transport_graph));
+		if compo != 1 {
+			write "There are" + compo + " components of the public transport graph before keeping the main one" color: #orange;
+		}
+		//
+		
+		public_transport_graph <- main_connected_component(public_transport_graph);
+	}
 	
 }
 

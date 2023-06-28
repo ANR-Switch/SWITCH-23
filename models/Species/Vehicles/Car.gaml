@@ -49,9 +49,9 @@ species Car parent: Vehicle schedules: [] {
 			current_road <- nil;
 			owner.location <- location;
 			my_destination <- dest;
-			//float t1 <- machine_time;
+//			float t1 <- machine_time;
 			my_path <- compute_path_between(location, my_destination);
-			//write "time : >>> " + (machine_time - t1) + " milliseconds" color: #green;
+//			write "time : >>> " + (machine_time - t1) + " milliseconds" color: #green;
 
 			if my_path = nil {
 				write get_current_date() + ": " + name + " belonging to: " + owner.name +" is not able to find a path between " + owner.current_building + " and " + owner.next_building color: #red;
