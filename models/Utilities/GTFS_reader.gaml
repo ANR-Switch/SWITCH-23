@@ -160,7 +160,7 @@ species GTFSreader schedules: [] {
 		//roads
 		list<Road> roads <- Road where(each.car_track);
 		list<int> done_shapes;
-		map<int, list<list<Road>>> bus_path_map;
+		//map<int, list<list<Road>>> bus_path_map;
 		 
 		//build shapes 
 		loop _row over: rows_list(shapes_csv.contents) {

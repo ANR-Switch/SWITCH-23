@@ -19,6 +19,7 @@ species Logger skills: [scheduling] {
 	string journals_output_file <- "journals_person" + string(length(Person)) + "_modality" + string(int(10*car_weight)) + string(int(10*bike_weight)) + string(int(10*feet_weight)) + string(int(10*public_transport_weight)) + ".csv";
 	string roads_output_file <- "roads_person" + string(length(Person)) + "_modality" + string(int(10*car_weight)) + string(int(10*bike_weight)) + string(int(10*feet_weight)) + string(int(10*public_transport_weight)) + "_step" + string(int(step)) + ".csv";
 	string traffic_output_file <- "traffic_person" + string(length(Person)) + "_modality" + string(int(10*car_weight)) + string(int(10*bike_weight)) + string(int(10*feet_weight)) + string(int(10*public_transport_weight)) + "_step" + string(int(step)) + ".csv";
+	string journals_public_transport_output_file <- "journals_pt_person" + string(length(Person)) + "_modality" + string(int(10*car_weight)) + string(int(10*bike_weight)) + string(int(10*feet_weight)) + string(int(10*public_transport_weight)) + ".txt";
 	
 	//options
 	bool log_roads_bool <- Constants[0].log_roads;
@@ -29,7 +30,7 @@ species Logger skills: [scheduling] {
 	string roads_file <- output_path + roads_output_file ;
 	string traffic_file <- output_path + traffic_output_file ;
 	string journals_file <- output_path + journals_output_file ;
-	string journals_pt_file <- output_path + "journals_pt.txt";
+	string journals_pt_file <- output_path + journals_public_transport_output_file;
 	
 	//msg
 	list full_road_msg_csv <- [];

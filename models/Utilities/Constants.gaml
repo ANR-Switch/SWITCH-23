@@ -28,7 +28,7 @@ species Constants schedules: [] {
 	float bus_size <- 11.0 const:true;
 	
 	//PublicTransportCard
-	int waiting_time_before_recomputing <- 15 const: true;
+	int waiting_time_before_recomputing <- 20 const: true;
 	
 	//person
 	int starting_time_randomiser <- 120 const: true; //minutes
@@ -55,5 +55,9 @@ species Constants schedules: [] {
 	
 	//TransportTrip
 	int minutes_for_graph_registration <- 15 const: true; //a trip will add itself to the transportgraph this many minutes before starting the bus/metro/...
+
+	//TransportRoute
+	int connection_penalty <- 0 const:true; //minutes, it is to make the graph minimize the change between edges
+
 }
 

@@ -48,10 +48,10 @@ species TransportTrip skills: [scheduling] schedules: [] {
 			if Constants[0].dynamic_public_transport_graph {
 				//register to graph a bit before our departure fro graph search
 				if get_current_date() < departure_times[0] add_minutes - registration_minutes {
-					do later the_action:"register_to_graph" at: departure_times[0] add_minutes - registration_minutes;
+					do later the_action:"register_to_graph_2" at: departure_times[0] add_minutes - registration_minutes;
 				}else{
 					write 'A trnsportTrip register itself late on schedule, this should not happen' color:#red;
-					do later the_action:"register_to_graph" at: get_current_date() add_seconds 1;
+					do later the_action:"register_to_graph_2" at: get_current_date() add_seconds 1;
 				}
 			}
 			
@@ -75,6 +75,36 @@ species TransportTrip skills: [scheduling] schedules: [] {
 				weight <- target_arrival_date - source_arrival_date;
 			}
 			add TE[0] to: my_edges;
+		}
+	}
+	
+	action register_to_graph_2 {
+		/*
+		 * Dans cette version de la méthode de création de graphe, nous ajoutons plus de 
+		 * edges au graphe de sorte à minimiser les changements inutiles entre les lignes
+		 */
+		if Constants[0].dynamic_public_transport_graph {
+			write "Il est fortement recommandé de na pas utiliser cette methode avec le graphe dynamique car cela prend beaucoup trop de temps!" color:#red;
+		}
+		 
+		loop edge_length from: 1 to: length(stops) {
+			loop decalage_idx from: 0 to: edge_length - 1 {
+				loop i from: 0 to: length(stops) - 2 {
+					if i+decalage_idx+edge_length < length(stops) {
+						create TransportEdge returns: TE {
+							source <- myself.stops[i+decalage_idx];
+							target <- myself.stops[i+decalage_idx+edge_length];
+							shape <- polyline([source.location, target.location]); //useful for directed graph?
+							trip <- myself;
+							route_type <- myself.transport_route.type;
+							source_arrival_date <- myself.departure_times[i];
+							target_arrival_date <- myself.departure_times[i+edge_length];
+							weight <- (target_arrival_date - source_arrival_date) + Constants[0].connection_penalty;
+						}
+						add TE[0] to: my_edges;	
+					}
+				}	
+			}	
 		}
 	}
 	

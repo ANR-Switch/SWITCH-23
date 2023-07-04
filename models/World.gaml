@@ -36,7 +36,7 @@ global {
 	geometry shape <- envelope(shape_roads_CT);
 	
 	string gtfs_file <- dataset_path + "gtfs/";
-	csv_file population <- csv_file("../includes/population/population_test100.csv", ",", true);
+	csv_file population <- csv_file("../includes/population/population_test.csv", ",", true);
 	
 	//SIM	
 	float step <- 3600 #seconds parameter: "Step"; //86400 for a day
@@ -49,9 +49,9 @@ global {
 	float cycle_timer <- machine_time;
 
 	//modality
-	float feet_weight <- 0.05 parameter: "Feet";
-	float bike_weight <- 0.1 parameter: "Bike";
-	float car_weight  <- 0.65 parameter: "Car";
+	float feet_weight <- 0.0 parameter: "Feet";
+	float bike_weight <- 0.0 parameter: "Bike";
+	float car_weight  <- 0.0 parameter: "Car";
 	float public_transport_weight <- 0.2 parameter: "Public_Transport";
 	//highlight path
 	int Person_idx <- 0 parameter: "Person_idx";
@@ -388,7 +388,7 @@ global {
 		
 		
 	 	if Person count(each.day_done) = length(Person) and TransportTrip count(each.alive) = 0 {
-	 		write "\n The experiment took: " + (machine_time - experiment_init_time)/1000.0 + " seconds." color:#green;
+	 		write "\n-> The experiment took: " + (machine_time - experiment_init_time)/1000.0 + " seconds.\n" color:#green;
 	 		
 	 		//LOGS
 	 		if !empty(Logger) {

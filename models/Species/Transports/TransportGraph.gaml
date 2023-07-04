@@ -15,7 +15,7 @@ species TransportGraph skills: [scheduling] schedules: [] {
 	map<TransportEdge, float> weights;
 	date last_update <- starting_date;
 	
-	list<int> registered_routes;
+	list<int> registered_routes <- [];
 	
 	init {
 		write "Init of the public transport graph...";
@@ -152,10 +152,19 @@ species TransportGraph skills: [scheduling] schedules: [] {
 	}
 	
 	action build_static_graph {
+		//remove shapes that are not active enough during one day
+		map<int, int> map_shape_occurence;
+		int nb_minimum_passage <- 50; //if a shape occurs less than this, it won't be considered in the graph to avoid ppl getting stuck
+		
 		loop tt over: TransportTrip {
-			if !(registered_routes contains tt.shape_id) {
+			map_shape_occurence[tt.shape_id] <- map_shape_occurence[tt.shape_id] + 1;
+		}
+		//
+		
+		loop tt over: TransportTrip {
+			if !(registered_routes contains tt.shape_id) and map_shape_occurence[tt.shape_id] > nb_minimum_passage {
 				ask tt {
-					do register_to_graph;
+					do register_to_graph_2;
 				}
 				add tt.shape_id to: registered_routes;
 			}

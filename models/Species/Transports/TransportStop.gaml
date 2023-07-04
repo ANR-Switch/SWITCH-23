@@ -32,13 +32,14 @@ species TransportStop schedules: [] {
 					//write string(bus.trip.route_id) + " asks " + real_name;
 					//and p.directions[p.itinerary_idx] = bus.trip.direction_id
 					loop p over: waiting_persons {
-						if p.routes[p.itinerary_idx] = bus.trip.route_id  {
+						if true {//p.routes[p.itinerary_idx] = bus.trip.route_id  {
 							loop i from:bus.current_stop_idx + 1 to: length(bus.trip.stops) - 1 {
 								//write bus.trip.stops[i].real_name;
 								if i < length(bus.trip.stops) and bus.trip.stops[i].real_name = p.stops[p.itinerary_idx+1].real_name and !(return_list contains p.owner){
 									//check if the bus will pass through the next stop of the person (ie where person wants to get out of the bus)
 									//we do this check because some lines have different terminus despite having the same id
 									add p.owner to: return_list;
+									break;
 								} 
 							}
 						}
@@ -47,12 +48,13 @@ species TransportStop schedules: [] {
 				match Metro {
 					Metro metro <- Metro(v);
 					loop p over: waiting_persons {
-						if p.routes[p.itinerary_idx] = metro.trip.route_id and p.directions[p.itinerary_idx] = metro.trip.direction_id {
+						if true { //p.routes[p.itinerary_idx] = metro.trip.route_id and p.directions[p.itinerary_idx] = metro.trip.direction_id {
 							loop i from:metro.current_stop_idx + 1 to: length(metro.trip.stops) - 1 {
 								if i < length(metro.trip.stops) and metro.trip.stops[i].real_name = p.stops[p.itinerary_idx+1].real_name and !(return_list contains p.owner){
 									//check if the bus will pass through the next stop of the person (ie where person wants to get out of the bus)
 									//we do this check because some lines have different terminus despite having the same id
 									add p.owner to: return_list;
+									break;
 								} 
 							}
 						}
@@ -61,12 +63,13 @@ species TransportStop schedules: [] {
 				match Tramway {
 					Tramway tramway <- Tramway(v);
 					loop p over: waiting_persons {
-						if p.routes[p.itinerary_idx] = tramway.trip.route_id and p.directions[p.itinerary_idx] = tramway.trip.direction_id {
+						if true { //p.routes[p.itinerary_idx] = tramway.trip.route_id and p.directions[p.itinerary_idx] = tramway.trip.direction_id {
 							loop i from:tramway.current_stop_idx + 1 to: length(tramway.trip.stops) - 1 {
 								if i < length(tramway.trip.stops) and tramway.trip.stops[i].real_name = p.stops[p.itinerary_idx+1].real_name and !(return_list contains p.owner){
 									//check if the bus will pass through the next stop of the person (ie where person wants to get out of the bus)
 									//we do this check because some lines have different terminus despite having the same id
 									add p.owner to: return_list;
+									break;
 								} 
 							}
 						}
@@ -75,12 +78,13 @@ species TransportStop schedules: [] {
 				match Teleo {
 					Teleo teleo <- Teleo(v);
 					loop p over: waiting_persons {
-						if p.routes[p.itinerary_idx] = teleo.trip.route_id and p.directions[p.itinerary_idx] = teleo.trip.direction_id {
+						if true { //p.routes[p.itinerary_idx] = teleo.trip.route_id and p.directions[p.itinerary_idx] = teleo.trip.direction_id {
 							loop i from:teleo.current_stop_idx + 1 to: length(teleo.trip.stops) - 1 {
 								if i < length(teleo.trip.stops) and teleo.trip.stops[i].real_name = p.stops[p.itinerary_idx+1].real_name and !(return_list contains p.owner){
 									//check if the bus will pass through the next stop of the person (ie where person wants to get out of the bus)
 									//we do this check because some lines have different terminus despite having the same id
 									add p.owner to: return_list;
+									break;
 								} 
 							}
 						}

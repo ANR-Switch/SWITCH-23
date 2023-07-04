@@ -107,11 +107,11 @@ species Teleo parent: Vehicle schedules: [] {
 			}
 		}
 		//remove edge from graph
-		if current_stop_idx < length(trip.my_edges) and Constants[0].dynamic_public_transport_graph {
-			ask trip.my_edges[current_stop_idx] {
-				do die;	
-			}
-		}
+//		if current_stop_idx < length(trip.my_edges) and Constants[0].dynamic_public_transport_graph {
+//			ask trip.my_edges[current_stop_idx] {
+//				do die;	
+//			}
+//		}
 	}
 	
 	action goto(point dest){
