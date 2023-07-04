@@ -19,7 +19,7 @@ species Logger skills: [scheduling] {
 	string journals_output_file <- "journals_person" + string(length(Person)) + "_modality" + string(int(10*car_weight)) + string(int(10*bike_weight)) + string(int(10*feet_weight)) + string(int(10*public_transport_weight)) + ".csv";
 	string roads_output_file <- "roads_person" + string(length(Person)) + "_modality" + string(int(10*car_weight)) + string(int(10*bike_weight)) + string(int(10*feet_weight)) + string(int(10*public_transport_weight)) + "_step" + string(int(step)) + ".csv";
 	string traffic_output_file <- "traffic_person" + string(length(Person)) + "_modality" + string(int(10*car_weight)) + string(int(10*bike_weight)) + string(int(10*feet_weight)) + string(int(10*public_transport_weight)) + "_step" + string(int(step)) + ".csv";
-	string journals_public_transport_output_file <- "journals_pt_person" + string(length(Person)) + "_modality" + string(int(10*car_weight)) + string(int(10*bike_weight)) + string(int(10*feet_weight)) + string(int(10*public_transport_weight)) + ".txt";
+	string journals_public_transport_output_file <- "journals_pt_person" + string(length(Person)) + "_modality" + string(int(10*car_weight)) + string(int(10*bike_weight)) + string(int(10*feet_weight)) + string(int(10*public_transport_weight)) + ".csv";
 	
 	//options
 	bool log_roads_bool <- Constants[0].log_roads;
@@ -75,20 +75,20 @@ species Logger skills: [scheduling] {
 			write "It can take a while...";
 			bool erased <- false;
 			
-			list<string> header <- ["act_idx", "person name", "road name", "road topo id", "distance", "entry_date", "leave_date", "mean speed", "lateness"];
+			list<string> header <- ["person name", "act_idx", "vehicle name", "road name", "road topo id", "distance", "entry date", "leave date", "mean speed", "lateness"];
 			save header to: journals_file format:"csv" rewrite:true header:false;
-			save "" to: journals_pt_file format:"txt" rewrite:true header:false;
+			
+			header <- ["person name", "act_idx", "public transport name", "entry date", "entry stop", "leave date", "leave stop", "public transport route name", "minutes in total"];
+			save header to: journals_pt_file format:"csv" rewrite:true header:false;
 			
 			loop p over: Person  {
 				if species(p.vehicles[0]) = PublicTransportCard {
-					save p.name to: journals_pt_file format:"txt" rewrite:false header:false;
 					loop _line over: p.journal_str {
-						save _line to: journals_pt_file format:"txt" rewrite:false header:false;
+						save p.name + "," + _line to: journals_pt_file format:"csv" rewrite:false header:false;
 					}
-					save "" to: journals_pt_file format:"txt" rewrite:false header:false;
 				}else{
 					loop _line over: p.journal_str {
-						save _line to: journals_file format:"csv" rewrite:false header:false;
+						save p.name + "," + _line to: journals_file format:"csv" rewrite:false header:false;
 					}
 				}
 			}

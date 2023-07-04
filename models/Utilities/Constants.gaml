@@ -57,7 +57,7 @@ species Constants schedules: [] {
 	int minutes_for_graph_registration <- 15 const: true; //a trip will add itself to the transportgraph this many minutes before starting the bus/metro/...
 
 	//TransportRoute
-	int connection_penalty <- 0 const:true; //minutes, it is to make the graph minimize the change between edges
+	int connection_penalty <- 10 const:true; //minutes, it is to make the graph minimize the change between edges
 
 }
 

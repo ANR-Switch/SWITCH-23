@@ -51,7 +51,7 @@ global {
 	//modality
 	float feet_weight <- 0.0 parameter: "Feet";
 	float bike_weight <- 0.0 parameter: "Bike";
-	float car_weight  <- 0.0 parameter: "Car";
+	float car_weight  <- 0.2 parameter: "Car";
 	float public_transport_weight <- 0.2 parameter: "Public_Transport";
 	//highlight path
 	int Person_idx <- 0 parameter: "Person_idx";
@@ -373,7 +373,11 @@ global {
     }
 	 
 	 /*
+	  * /!\
+	  * 
 	  * REFLEX
+	  * 
+	  * /!\
 	  */
 	 reflex { 
 		if cycle = 0 {
@@ -384,10 +388,9 @@ global {
 		write "\n-> The cycle took " + (machine_time-cycle_timer)/1000 + " seconds to simulate " + step + " seconds.";
 		write "-> Sim_time/Real_time ratio: " + int((1000*step)/(machine_time-cycle_timer)) ;
 		cycle_timer <- machine_time;
-		write "-> Current simulation date : " + current_date + "\n";
+		write "-> Current simulation date : " + current_date + "\n";		
 		
-		
-	 	if Person count(each.day_done) = length(Person) and TransportTrip count(each.alive) = 0 {
+	 	if Person count(each.day_done) = length(Person) { //and TransportTrip count(each.alive) = 0 {
 	 		write "\n-> The experiment took: " + (machine_time - experiment_init_time)/1000.0 + " seconds.\n" color:#green;
 	 		
 	 		//LOGS
@@ -403,7 +406,6 @@ global {
 	 	}
 	 	
 	 }
-
 }
 
 
@@ -428,8 +430,7 @@ experiment "Display & Graphs" type: gui {
 			ask Person[Person_idx] {do highlight_path(Path_idx);}
 		}else{
 			write "Person_idx is out of range ! Try again." color:#red;
-		}
-		
+		}		
 	}
 	
 	/*
