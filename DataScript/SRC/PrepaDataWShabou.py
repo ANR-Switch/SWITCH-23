@@ -6,10 +6,9 @@ Created on Tue Apr 25 10:23:27 2023
 @author: flavien
 """
 import pandas as pd
-import createActivityChain as ac
+
 import Classify_Shabou as cp
-
-
+import createActivityChain as ac
 
 
 def createProfileList(r) :

@@ -6,10 +6,9 @@ Created on Wed Mar 22 15:19:25 2023
 @author: flavien
 """
 import pandas as pd
+
 import createActivityChain as ac
 
-
-    
 
 def classify(r):
     #age = r['p4']
