@@ -16,10 +16,12 @@ import CentroidandSphere as Cs
 import FormatRoute as Fr
 import PrepaDataWShabou as Shabou
 
-src_ppl = '../IN/toulouse_2013_std_pers.csv'
+src_ppl = '../IN/EMD_pers.csv'
 dst_ppl = '../OUT/People.csv'
 
-src_depl = '../IN/toulouse_2013_std_depl.csv'
+src_pop = '../IN/population.csv'
+
+src_depl = '../IN/EMD_depl.csv'
 dst_depl = '../OUT/depl.csv'
 
 src_road = '../IN/TRONCON_DE_ROUTE.shp'
@@ -39,6 +41,7 @@ in_path = '../IN'
 
 communes = '../IN/COMMUNE.shp'
 communeAEtudier = "31555"
+rayon = 15000
 
 def one_of(l):
     actis = ast.literal_eval(l['D5A'])
@@ -91,10 +94,12 @@ else:
     pop_model = pd.read_csv(population_model)
 
 if (not os.path.exists(population)):
+    print('read population file')
+    pop = pd.read_csv(src_pop)
+
     print('create new population with model')
     pop_model.set_index(['profile'], inplace=True)
-
-    pop = ppl.apply(lambda r: set_activities(r), axis=1)
+    pop = pop.apply(lambda r: set_activities(r), axis=1)
     pop = pop.drop(axis=1, labels='Unnamed: 0')
     pop.to_csv(population)
 else:
@@ -104,7 +109,7 @@ else:
 if (not os.path.exists(dst_road)):
     print('creating roads')
     road = gpd.read_file(src_road)
-    road = Cs.intersectCercle(road, communes, communeAEtudier)
+    road = Cs.intersectCercle(road, communes, communeAEtudier, rayon)
     road = Fr.format_route_direct(road)
     road.to_file(dst_road)
 else:
@@ -113,7 +118,7 @@ else:
 if (not os.path.exists(dst_bati)):
     print('creating bati')
     bati = gpd.read_file(src_bati)
-    bati = Cs.intersectCercle(bati, communes, communeAEtudier)
+    bati = Cs.intersectCercle(bati, communes, communeAEtudier, rayon)
     bati = Cs.normalise_bati_topo(bati)
     bati.to_file(dst_bati)
 else:
