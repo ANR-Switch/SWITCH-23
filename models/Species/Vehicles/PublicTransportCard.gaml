@@ -107,7 +107,6 @@ species PublicTransportCard parent: Vehicle schedules: [] {
 //					do wait_to_stop;
 				}else{
 					write get_current_date() + ": " + owner.name + " called goto on " + name + " but the path computed is empty." color:#red;
-					write distance_to(owner.location, owner.current_destination);
 					owner.location <- owner.current_destination;
 					add get_current_date() + ": got an empty itinerary!" to: journal;
 					ask owner {
@@ -179,12 +178,12 @@ species PublicTransportCard parent: Vehicle schedules: [] {
 	}
 	
 	action go_on_itinerary {
-		if itinerary_idx < length(routes) {
+		if itinerary_idx < length(routes) - 1 {
 			if routes[itinerary_idx] != nil {
 				do wait_to_stop;	
 			}else{
-				itinerary_idx <- itinerary_idx +1;
-				//write get_current_date() + ": " + owner.name  + " walks from one stop to another.";
+				itinerary_idx <- itinerary_idx + 1;
+				//write get_current_date() + ": " + owner.name  + " walks from: " + stops[itinerary_idx-1].real_name + " to: " + stops[itinerary_idx].real_name color:#orange;
 				add get_current_date() + ": " + owner.name  + " walks from one stop to another." to: journal;
 				do later the_action: "go_on_itinerary" at: get_current_date() add_minutes 2;
 			}
@@ -245,15 +244,6 @@ species PublicTransportCard parent: Vehicle schedules: [] {
 		location <- owner.location;
 	}
 	
-//	action skip_connection {
-//		if itinerary[itinerary_idx].value != nil {
-//			do wait_to_stop(itinerary[itinerary_idx].key);
-//			return;
-//		}else{
-//			itinerary_idx <- itinerary_idx + 1;
-//			do skip_connection;
-//		}
-//	}
 	
 	action propose {
 		write "The mtd propose should not be called on a PublicTransportCard" color:#red;

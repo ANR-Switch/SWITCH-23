@@ -50,21 +50,24 @@ species TransportGraph skills: [scheduling] schedules: [] {
 		//
 		
 		/* This part is for "walking distance" connections between different stops
-		loop st1 over: TransportStop {
-		 	loop st2 over: TransportStop {
-	 			if  (distance_to(st1.location, st2.location)) < Constants[0].allowed_walking_distance and (st1 != st2) and (st1.location != st2.location) {
-	 				create TransportEdge {
-	 					source <- st1;
-	 					target <- st2;
-	 					shape <- polyline([source.location, target.location]);
-	 					connection <- true;
-	 					walk_trip <- true; //important!
-	 					weight <- distance_to(st1.location, st2.location)/3;
-	 				}
-	 			}
-		 	}
+		 * 
+		 */
+		 if Constants[0].walking_connections {
+			loop st1 over: TransportStop {
+			 	loop st2 over: TransportStop {
+		 			if  (distance_to(st1.location, st2.location)) < Constants[0].allowed_walking_distance and (st1 != st2) and (st1.location != st2.location) {
+		 				create TransportEdge {
+		 					source <- st1;
+		 					target <- st2;
+		 					shape <- polyline([source.location, target.location]);
+		 					connection <- true;
+		 					walk_trip <- true; //important!
+		 					weight <- distance_to(st1.location, st2.location)/3; //ppl walks at 3km/h
+		 				}
+		 			}
+			 	}	
+			 }
 		}
-		*/
 		//
 		
 		if ! Constants[0].dynamic_public_transport_graph {
@@ -94,7 +97,9 @@ species TransportGraph skills: [scheduling] schedules: [] {
 			last_update <- d;	
 		}
 		
+		float t <- machine_time;
 		p <- path_between(public_transport_graph, _s, _t);
+		//write "time for PT graph : " + (machine_time-t)/1000 + " secs.";
 		
 		if p != nil and !empty(p.edges) {
 			//transform to an easier-to-read list 

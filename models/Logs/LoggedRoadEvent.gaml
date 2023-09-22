@@ -4,7 +4,9 @@
 * Author: coohauterv
 * Tags: 
 */
-
+/*
+ * PROBABLY NOT USEFUL ANYMORE
+ */
 /*
  * This is just a structure to store info for the output CSV
  */

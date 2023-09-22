@@ -150,8 +150,7 @@ species GTFSreader schedules: [] {
 		 */
 		 
 		write "Creating shape of the TransportTrip...";
-		int nmax <- 5; //TODO remove
-		int n <- 0;
+	
 		//shapes
 		map<int, list<point>> shape_map;
 		int curr_id;

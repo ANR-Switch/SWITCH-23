@@ -3,6 +3,7 @@
 * Based on the internal empty template. 
 * Author: ohauterville
 * Tags: 
+* Commented
 */
 model World
 
@@ -26,7 +27,7 @@ import "Species/Map/Building.gaml"
 
 global {
 	//FILES
-	//string dataset_path <- "../includes/Dijon/";
+	//string dataset_path <- "../includes/tests/100Roads/";
 	string dataset_path <- "../includes/agglo/";
 	
 	shape_file shape_roads_CT <- shape_file(dataset_path + "roads.shp");
@@ -36,10 +37,10 @@ global {
 	geometry shape <- envelope(shape_roads_CT);
 	
 	string gtfs_file <- dataset_path + "gtfs/";
-	csv_file population <- csv_file("../includes/population/population_test.csv", ",", true);
+	csv_file population <- csv_file("../includes/population/population_10000.csv", ",", true);
 	
 	//SIM	
-	float step <- 3600 #seconds parameter: "Step"; //86400 for a day
+	float step <- 86400 #seconds parameter: "Step"; //86400 for a day
 	float simulated_days <- 1 #days parameter: "Simulated_days";
 	float experiment_init_time;
 	
@@ -49,11 +50,19 @@ global {
 	float cycle_timer <- machine_time;
 
 	//modality
-	float feet_weight <- 0.0 parameter: "Feet";
-	float bike_weight <- 0.0 parameter: "Bike";
-	float car_weight  <- 0.2 parameter: "Car";
-	float public_transport_weight <- 0.2 parameter: "Public_Transport";
-	//highlight path
+	/*
+	 * ici on fixe les distributions de modalité
+	 */
+	float feet_weight <- 0.05 parameter: "Feet";
+	float bike_weight <- 0.05 parameter: "Bike";
+	float car_weight  <- 0.65 parameter: "Car";
+	float public_transport_weight <- 0.15 parameter: "Public_Transport";
+	
+	//highlight path : useless now
+	/*
+	 * Ces paramètres servaient à selectionner un agent et un de ses trajet afin de le mettre en valeur dans le display, 
+	 * mais ça a changé depuis, il faudra refaire la fonction
+	 */
 	int Person_idx <- 0 parameter: "Person_idx";
 	int Path_idx <- 0 parameter: "Path_idx";
 
@@ -66,7 +75,9 @@ global {
 	graph bike_road_graph;
 	TransportGraph public_transport_graph;
 	
-	int road_importance <- 7 const:true; //considers roads of importance less than or eq to this
+	int road_importance <- 7 const: true; //considers roads of importance less than or eq to this
+	
+	//Precalcul des chemins : en dev 
 	bool save_matrix_as_csv <- false;
 	string matrix_path <- "C:\\Users\\coohauterv\\git\\SWITCH-23\\includes\\matrices\\";
 	matrix<int> car_shortest_paths;
@@ -89,7 +100,7 @@ global {
 
 		do normalize_modality();
 		
-		////Constants and Logger
+		////Constants 
 		create Constants; //constant file useful for other species		
 		
 		//init
@@ -97,16 +108,9 @@ global {
 		do init_buildings;
 	 	do init_roads;
 	 	
-	 	if Constants[0].public_transports {
-	 		do init_public_transport;	
-	 	}
-	 	
 	 	do init_graphs; //should be done after roads and public transports
 	 	
 	 	do init_persons_csv;
-	 	
-	 	//linkage
-	 	//do link_roads_to_event_manager(EventManager[0]); done in init_roads
 		
 		//logger should be created after the other species
 		if Constants[0].log_journals or Constants[0].log_roads or Constants[0].log_traffic {
@@ -140,7 +144,7 @@ global {
 		write "Persons...";
 		float t1 <- machine_time;
 		
-		loop i from:0 to: 0 {
+		loop i from:0 to: 4 {
 		
 			create Person from: population with: [
 				/*first_name::read("nom"),
@@ -240,7 +244,7 @@ global {
 		] {
 			
 			if Constants[0].double_the_roads {
-				//double
+				//double les routes si ce n'est pas déjà fait dans la BD
 				if oneway = "Double sens" {	
 					create Road with: [
 						lanes::self.lanes,
@@ -303,27 +307,41 @@ global {
 
 	 	write "Cars can use " + length(car_road_graph) + " road segments.";
 	 	
-	 	if save_matrix_as_csv {
-	 		car_shortest_paths <- save_matrix_from_graph(car_road_graph, matrix_path+"car_road_matrix" + string(road_importance) + ".csv");
-	 	}else{
-	 		//car_shortest_paths <- matrix(csv_file(matrix_path+"car_road_matrix" + string(road_importance) + ".csv"));
+	 	if save_matrix_as_csv{
+	 		try {
+	 			car_road_graph <- load_shortest_paths(car_road_graph, matrix(csv_file(matrix_path+"car_road_matrix" + string(road_importance) + ".csv")));
+	 		}
+	 		catch {
+	 			car_shortest_paths <- save_matrix_from_graph(car_road_graph, matrix_path+"car_road_matrix" + string(road_importance) + ".csv");
+	 			car_road_graph <- load_shortest_paths(car_road_graph, matrix(csv_file(matrix_path+"car_road_matrix" + string(road_importance) + ".csv")));
+	 		}
 	 	}
 	 	
-	 	if Constants[0].public_transports {
+	 	if Constants[0].load_public_transports {
 		 	//Public transports
+		 	
+		 	create GTFSreader; 
+		 	
 		 	ask GTFSreader[0] {
 		 		do assign_shapes;
 		 	}
+		 	
 		 	create TransportGraph returns: _graph {
 		 		event_manager <- EventManager[0];
 		 	}
+		 	
 		 	public_transport_graph <- _graph[0];	
+		 }else{
+		 	write "The public transport option is not on. You can turn it on in the Constants file." color:#orange;
 		 }
 	 	
 	 	write "Graphs created in " + (machine_time-t1)/1000.0 + " seconds.";
 	 }
 	 
 	 matrix<int> save_matrix_from_graph(graph gr, string file_name){
+	 	/*
+	 	 * Cette fonction sert à précalculer les plus courts chemins
+	 	 */
 	 	matrix<int> mat;
 	 	
  		write "Saving the graph shortest paths...";
@@ -336,11 +354,10 @@ global {
 	 	return mat;
 	 }
 	 
-	 action init_public_transport {
-	 	create GTFSreader;
-	 }
-	 
 	 action normalize_modality {
+	 	/*
+	 	 * Cette fonction normalise les parts modales pour que la somme soit 1.0
+	 	  */
 	 	float sum <- feet_weight + bike_weight + car_weight + public_transport_weight;
 	 	feet_weight <- feet_weight / sum ;
 	 	bike_weight <- bike_weight / sum ;
@@ -388,8 +405,11 @@ global {
 		write "\n-> The cycle took " + (machine_time-cycle_timer)/1000 + " seconds to simulate " + step + " seconds.";
 		write "-> Sim_time/Real_time ratio: " + int((1000*step)/(machine_time-cycle_timer)) ;
 		cycle_timer <- machine_time;
-		write "-> Current simulation date : " + current_date + "\n";		
+		write "-> Current simulation date : " + current_date add_seconds(-step) + "\n";		
 		
+		/*
+		 * A la fin de la simu : 
+		 */
 	 	if Person count(each.day_done) = length(Person) { //and TransportTrip count(each.alive) = 0 {
 	 		write "\n-> The experiment took: " + (machine_time - experiment_init_time)/1000.0 + " seconds.\n" color:#green;
 	 		
@@ -401,10 +421,8 @@ global {
 		 			do save_journal_logs;
 		 		}	
 		 	}
-	 		
 	 		do pause;
 	 	}
-	 	
 	 }
 }
 
@@ -499,7 +517,6 @@ experiment "Display & Graphs" type: gui {
         	}
         }
 //		monitor "Time: " value: current_date;
-
 	}
 }
 
@@ -532,8 +549,8 @@ experiment "Display only" type: gui {
 	 */
 	output {
 		display main_window type: opengl {
-//			species TransportStop refresh:false;
-//			species TransportRoute refresh:false;
+//			species TransportStop refresh: false;
+//			species TransportRoute refresh: false;
 //			species TransportEdge;
 			
 //			species Building refresh:false;
@@ -547,7 +564,6 @@ experiment "Display only" type: gui {
 //			species Metro;
 //			species Tramway;
 //			species Teleo;
-						
 			
 			overlay right: "Date: " + current_date  color: #orange;
 		}

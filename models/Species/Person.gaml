@@ -2,7 +2,8 @@
 * Name: Person
 * Based on the internal empty template. 
 * Author: coohauterv
-* Tags: 
+* Tags:
+* Commented
 */
 
 
@@ -314,6 +315,10 @@ species Person skills: [scheduling] schedules: [] {
     }
     
     action choose_current_vehicle {
+    	/*
+    	 * Cette fct est uen ébauche d'un choix modal. A faire plus tard
+    	 * Si fct_on <- false, on ne fait pas de choix modal
+    	 */
     	bool fct_on <- false;
     	if fct_on {
 	    	path planned_path;

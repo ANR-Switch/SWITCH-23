@@ -5,7 +5,9 @@
 * Tags: 
 */
 
-
+/*
+ * PROBABLY NOT USEFUL ANYMORE
+ */
 model Journal
 
 import "LoggedRoadEvent.gaml"

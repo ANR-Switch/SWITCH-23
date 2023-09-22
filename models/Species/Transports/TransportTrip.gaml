@@ -177,6 +177,7 @@ species TransportTrip skills: [scheduling] schedules: [] {
 			ask my_edges {
 				do die;
 			}
+			alive <- false;
 			do die;	
 		}else{
 			alive <- false;
