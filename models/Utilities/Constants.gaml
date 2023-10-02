@@ -17,10 +17,10 @@ species Constants schedules: [] {
 	int simulation_reduction_factor <- 1 const:true;
 	
 	//false to avoid charging all the public-transport-related agents
-	bool load_public_transports <- true const: true;
+	bool load_public_transports <- false const: true;
 	
 	////Logs.gaml
-	bool log_journals <- true const:true;
+	bool log_journals <- false const:true;
 	bool log_roads <- false const:true;
 	bool log_traffic <- false const:true;
 	

@@ -49,9 +49,34 @@ species Car parent: Vehicle schedules: [] {
 			current_road <- nil;
 			owner.location <- location;
 			my_destination <- dest;
-			//float t1 <- machine_time;
+			
+			float t1 <- machine_time;
 			my_path <- compute_path_between(location, my_destination);
-			//write "time : >>> " + (machine_time - t1) + " milliseconds" color: #green;
+						
+			/*
+			/////////TEST
+			//create a random path
+			int random1 <- rnd(15,150);
+			int random2;
+			
+			my_path <- nil;
+			list<Road> roads <- [];
+			
+			
+			loop i from: 0 to: random1 {
+				random2 <- rnd(length(Road)-1);
+				
+				if Road[random2].car_track and !(roads contains Road[random2]){
+					add Road[random2] to: roads;	
+				}
+			}
+			my_path <- roads;
+			//fin test
+			*/
+			
+			_miliseconds <- _miliseconds + (machine_time - t1);
+			//write "Car path >>> " + (machine_time - t1) + " milliseconds" color: #green;
+			
 
 			if my_path = nil {
 				write get_current_date() + ": " + name + " belonging to: " + owner.name +" is not able to find a path between " + owner.current_building + " and " + owner.next_building color: #red;
@@ -130,7 +155,9 @@ species Car parent: Vehicle schedules: [] {
 		current_road <- nil;
 		
 		ask owner {
-			do walk_to(current_destination); //this may kill the vehicle so make sure this is our last action
+			//do walk_to(current_destination); //this may kill the vehicle so make sure this is our last action //TRYING without walk_to fct
+			location <- current_destination; //remove these two lines 
+			do end_motion;
 		}
 	}
 	
@@ -140,16 +167,6 @@ species Car parent: Vehicle schedules: [] {
 		save [owner.current_building.db_id, owner.next_building.db_id] to: the_file format:"csv" rewrite:false;
 	
 	}
-	
-//	float compute_theoretical_time {
-//		float t;
-//		loop r over: my_path.edges {
-//			ask Road(r) {
-//				t <- t + get_theoretical_travel_time(myself);
-//			}
-//		}
-//		return t;
-//	} 
 	
 	aspect default {
 		draw circle(10) color: color border: #black;

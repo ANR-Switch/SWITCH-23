@@ -27,7 +27,6 @@ import "Species/Map/Building.gaml"
 
 global {
 	//FILES
-	//string dataset_path <- "../includes/tests/100Roads/";
 	string dataset_path <- "../includes/agglo/";
 	
 	shape_file shape_roads_CT <- shape_file(dataset_path + "roads.shp");
@@ -37,7 +36,7 @@ global {
 	geometry shape <- envelope(shape_roads_CT);
 	
 	string gtfs_file <- dataset_path + "gtfs/";
-	csv_file population <- csv_file("../includes/population/population_10000.csv", ",", true);
+	csv_file population <- csv_file("../includes/population/population_100.csv", ",", true);
 	
 	//SIM	
 	float step <- 86400 #seconds parameter: "Step"; //86400 for a day
@@ -56,7 +55,7 @@ global {
 	float feet_weight <- 0.05 parameter: "Feet";
 	float bike_weight <- 0.05 parameter: "Bike";
 	float car_weight  <- 0.65 parameter: "Car";
-	float public_transport_weight <- 0.15 parameter: "Public_Transport";
+	float public_transport_weight <- 0.0 parameter: "Public_Transport";
 	
 	//highlight path : useless now
 	/*
@@ -67,6 +66,10 @@ global {
 	int Path_idx <- 0 parameter: "Path_idx";
 
 	int nb_event_managers <- 1;
+
+	//TEST
+	float _miliseconds <- 0.0;	
+	int total_nb_paths <- 0;
 	
 	
 	//Graphs
@@ -75,7 +78,7 @@ global {
 	graph bike_road_graph;
 	TransportGraph public_transport_graph;
 	
-	int road_importance <- 7 const: true; //considers roads of importance less than or eq to this
+	int road_importance <- 4 const: true; //considers roads of importance less than or eq to this
 	
 	//Precalcul des chemins : en dev 
 	bool save_matrix_as_csv <- false;
@@ -116,6 +119,9 @@ global {
 		if Constants[0].log_journals or Constants[0].log_roads or Constants[0].log_traffic {
 			create Logger;
 			Logger[0].event_manager <- EventManager[0];	
+			write "\nLog options activated...";
+		}else{
+			write "\nAll logging options are turned off." color: #orange;
 		}
 		
 		write "Simulation is ready. In " + (machine_time - sim_init_time)/1000.0 + " seconds." ;
@@ -126,25 +132,12 @@ global {
 		create EventManager number: nb_event_managers;
 	}
 	
-//	action init_persons {
-//		//create the persons
-//		write "Persons...";
-//		float t1 <- machine_time;
-//		create Population_builder {
-//			sim_starting_date <- myself.sim_starting_date;
-//			working_buildings <- myself.working_buildings;
-//			living_buildings <- myself.living_buildings;
-//			do initialize_population;
-//		}
-//		write "There are " + length(Person) + " Persons loaded in " + (machine_time-t1)/1000.0 + " seconds.";
-//	}
-	
 	action init_persons_csv {
 		//create the persons
-		write "Persons...";
+		write "\nPersons...";
 		float t1 <- machine_time;
 		
-		loop i from:0 to: 4 {
+		loop i from:0 to: 10 {
 		
 			create Person from: population with: [
 				/*first_name::read("nom"),
@@ -174,16 +167,13 @@ global {
 				
 	//			//activities
 				do register_activities; //after link to eventmanager
-	
-				//write name + " created.";
-			}
-			
+			}			
 		}		
 		write "There are " + length(Person) + " Persons loaded in " + (machine_time-t1)/1000.0 + " seconds.";
 	}
 	
 	action init_buildings {
-	 	write "Buildings...";
+	 	write "\nBuildings...";
 	 	float t1 <- machine_time;
 		create Building from: shape_buildings with: [
 			type::int(read("type")),
@@ -231,7 +221,7 @@ global {
 	 }
 	 
 	 action init_roads {
-	 	write "Roads...";
+	 	write "\nRoads...";
 	 	float t1 <- machine_time;
 	 	//car roads
 		create Road from: shape_roads_CT with: [lanes::int(read("NB_VOIES")), 
@@ -264,10 +254,14 @@ global {
 		}
 		write "There are " + length(Road) + " Roads loaded in " + (machine_time-t1)/1000.0 + " seconds.";
 		write "" + length(Road where each.had_to_increase_capacity) + " roads had to increase their maximum capacity." color:#orange;
+		 //TEST
+//		 loop i over: Road where each.car_track {
+//		 	add i::i.max_capacity to: road_distribution;
+//		 }
 	 }
 	 
 	 action init_graphs {
-	 	write "Graphs...";
+	 	write "\nGraphs...";
 	 	float t1 <- machine_time;
 	 	list<Road> road_subset;
 	 	map<Road, float> road_weights_map;
@@ -294,6 +288,7 @@ global {
 	 	road_subset <- Road where (each.car_track and each.importance <= road_importance);
 	 	road_weights_map <- road_subset as_map (each:: (each.shape.perimeter/each.max_speed));
 	 	car_road_graph <- as_edge_graph(road_subset) with_weights road_weights_map;
+	 	car_road_graph <- car_road_graph with_shortest_path_algorithm #TransitNodeRouting;
 	 	car_road_graph <- directed(car_road_graph);
 	 	
 	 	//estimate for info

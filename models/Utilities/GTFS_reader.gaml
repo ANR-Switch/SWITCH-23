@@ -3,7 +3,9 @@
 * Based on the internal empty template. 
 * Author: coohauterv
 * Tags: 
+* PT c'est Public Transports
 */
+
 
 
 model GTFSreader
@@ -44,7 +46,7 @@ species GTFSreader schedules: [] {
 	}
 	
 	action create_stops {
-		write "Creating the stops...";
+		write "\nCreating the PT stops...";
 				
 		create TransportStop from: stops_csv with: [
 			real_name::string(read("stop_name")),
@@ -60,7 +62,7 @@ species GTFSreader schedules: [] {
 	}
 	
 	action create_routes {
-		write "Creating the routes..."; 
+		write "\nCreating the PT routes..."; 
 		
 		//string ligneA_id <- "line:61"; //names in csv
 		//string ligneB_id <- "line:69";
@@ -81,7 +83,7 @@ species GTFSreader schedules: [] {
 	}
 	
 	action create_trips {
-		write "Creating the trips...";
+		write "\nCreating the PT trips...";
 		
 		create TransportTrip from: trips_csv with: [
 			route_id::read("route_id"),
@@ -119,7 +121,7 @@ species GTFSreader schedules: [] {
 		 * 9 : stop headsign
 		 * 
 		 */
-		write "Start building all the trips stop times...";
+		//write "Start building all the trips stop times...";
 		matrix stop_times_mat <- stop_times_csv.contents;
 		
 		float t <- machine_time;
@@ -149,7 +151,7 @@ species GTFSreader schedules: [] {
 		 * 4:shape_pt_sequence
 		 */
 		 
-		write "Creating shape of the TransportTrip...";
+		//write "Creating shape of the TransportTrip...";
 	
 		//shapes
 		map<int, list<point>> shape_map;
@@ -185,85 +187,6 @@ species GTFSreader schedules: [] {
 			if length(polyline(shape_map[_t.shape_id]).points) > length(routes_map[_t.route_id].shape.points) {
 				routes_map[_t.route_id].shape <- polyline(shape_map[_t.shape_id]);	
 			}
-			
-			//assign a list of Road that correspond to the shape's trip (for bus) in order to avoid calling the road graph all the time during execution
-			/*if _t.transport_route.type = 3 and n < nmax { //3=bus
-				if done_shapes contains(_t.shape_id) {
-					_t.bus_path <- bus_path_map[_t.shape_id];
-				}else{
-					//here we create a list of roads that correspond to the bus path
-					write "building road path for " + _t.shape_id;
-					list<list<Road>> curr_list;
-					list<Road> old_ligne;
-					path curr_path;
-					path old_path;
-					
-					loop i from: 0 to: length(_t.shape.points) -2 {
-						if _t.shape.points[i] != nil and _t.shape.points[i+1] != nil {
-							curr_path <- path_between(car_road_graph, _t.shape.points[i], _t.shape.points[i+1]);
-							
-							if curr_path != nil and !empty(curr_path.edges) {
-								add curr_path.edges to: curr_list;
-							}
-						}
-					}	
-					
-					//clean
-					old_ligne <- curr_list[0];
-					loop ligne over: curr_list {
-						if ligne != old_ligne {
-							if ligne[0] = last(old_ligne) {
-								remove index: 0 from: ligne;
-							}
-							if !empty(ligne) {
-								add ligne to: _t.bus_path;
-								old_ligne <- ligne;	
-							}
-						}
-					}
-					
-//					if curr_path != nil and !empty(curr_path.edges) and curr_path != old_path {
-//						if !empty(_t.bus_path) and (last(last(_t.bus_path)) != nil) and (Road(curr_path.edges[0]) = last(last(_t.bus_path))) {
-//							remove index: 0 from: curr_path.edges;
-//						}
-//						if !empty(curr_path.edges) and curr_path != old_path{
-//								
-//							old_path <- curr_path;	
-//						}
-//					}	
-					*/
-										
-					/*loop i from:0 to: length(_t.stops) - 2 {
-						source <- _t.stops[i].location;
-						target <- _t.stops[i+1].location;
-						target_roads <- roads closest_to(target,2);
-						
-						loop while: (last_road != target_roads[0] or last_road != target_roads[1]) and shape_list_idx < length(_t.shape.points) {
-							curr_road <- Road(roads closest_to(_t.shape.points[shape_list_idx]));
-							if curr_road != last_road {
-								add curr_road to: curr_list;
-								last_road <- curr_road;
-							}
-							shape_list_idx <- shape_list_idx + 1;
-						}
-						
-						if curr_list != [] {
-							add curr_list to: _t.bus_path;
-						}
-						curr_list <- [];
-					}*/
-					
-					//warning that should not appear
-//					if length(_t.bus_path) !=  length(_t.stops) - 1 {
-//						write "The road path for " + _t.shape_id + " does not seem consistent (too short or too long)." color:#orange;
-//					} 
-					
-					//save to avoid recomputing
-				/*  add _t.shape_id::_t.bus_path to: bus_path_map;
-					add _t.shape_id to: done_shapes;
-					n <- n+1;
-				}
-			}*/
 		}
 		write "Done.";
 	}

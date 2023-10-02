@@ -62,11 +62,14 @@ species PublicTransportCard parent: Vehicle schedules: [] {
 //				//TODO walk instead
 //			}
 			try {
+				float t1 <- machine_time;
 				ask public_transport_graph {
 					myself.itinerary <- get_itinerary_between(myself.location, myself.my_destination);
-				}	
+				}
+				_miliseconds <- _miliseconds + (machine_time - t1);
+				//write "PTCard path >>> " + (machine_time - t1) + " milliseconds" color: #green;	
 			}catch {
-				
+				write "PublicTransportCard : TRY to get a path did not work." color:#red;
 			}
 	
 			if itinerary = nil {
@@ -299,14 +302,5 @@ species PublicTransportCard parent: Vehicle schedules: [] {
 			}
 		}
 	}
-//	float compute_theoretical_time {
-//		float t;
-//		loop r over: my_path.edges {
-//			ask Road(r) {
-//				t <- t + get_theoretical_travel_time(myself);
-//			}
-//		}
-//		return t;
-//	} 
 }
 

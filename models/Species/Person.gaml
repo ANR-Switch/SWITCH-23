@@ -70,33 +70,12 @@ species Person skills: [scheduling] schedules: [] {
 	init {
 		create Feet returns: f;
 	  	my_feet <- f[0];
-		//
-//		create Journal returns: j {
-//			owner <- myself;
-//		}
-		//journal <- j[0];
 	}
 
 	
 	Building select_building (list<Building> l){
 		return one_of(l);
-	}
-    
-//	action select_agenda{
-//        //write "select_agenda";
-//        int i <- 0;
-//        map<int,Agenda> available_agendas <- [];
-//        loop p over:self.profile{
-//            loop a over:Agenda{
-//                if a.profile one_matches(each = p){
-//                    add a to: available_agendas;
-//                    i <- i+1;
-//                }
-//            }
-//        }
-//        personal_agenda <- one_of(available_agendas);
-//    }
-    
+	}    
 
     action register_activities {
     	if !empty(activities) and !empty(starting_dates){
@@ -107,16 +86,6 @@ species Person skills: [scheduling] schedules: [] {
 	  		do later the_action: "start_activity" at: d ;
 	    	//}	
 	    }
-	    /* 
-    	if !empty(activities) {
-    		//current_activity <- activities[0];
-    		date d <- starting_dates[0] add_minutes rnd(-floor(Constants[0].starting_time_randomiser/2), floor(Constants[0].starting_time_randomiser/2));
-    	  	do later the_action: "start_activity" at: d ;
-    	}else{
-    		day_done <- true;
-    		write get_current_date() + ": " + name + " will do nothing today.";
-    	}
-    	*/
     }
     
     action start_activity {    	
@@ -165,46 +134,24 @@ species Person skills: [scheduling] schedules: [] {
 		}
     	
 		if location != current_destination {
-			//Vehicle old_one <- current_vehicle;
 			do choose_current_vehicle;
-			//if old_one != nil and old_one != current_vehicle {
-			//	write "!!! -> " + name + " changed its mode !!! \n Now using " + current_vehicle.name + " instead of " + old_one.name color:#purple;
-			//}
-			if species(current_vehicle) = Car {
-				do walk_to(current_vehicle.location);
-			}else{
+	
+//			if species(current_vehicle) = Car { //TRYING without walk_to
+//				do walk_to(current_vehicle.location);
+//			}else{
 				do start_motion;	
-			}
+//			}
 		}else{
 			write name + " is already at its destination. It will do its activity directly.";
 			do end_motion;
 		}
     }
-    
-//    action end_activity {
-//    	color <- #black;
-//    	
-//    	if act_idx < length(activities) - 1 {
-//    		act_idx <- act_idx + 1;
-//    		current_activity <- personal_agenda.activities[act_idx];
-//    		
-//    		//check if we are not late on our agenda
-//    		if current_activity.starting_date > get_current_date() {
-//    			do later the_action: "start_activity" at: current_activity.starting_date;
-//    		}else{
-////    			write get_current_date() + ": " + name + " starts " + current_activity.title + " late on its agenda." color:#orange; 
-//				//this may either be due to a past traffic jam situation or a the randomisation if the starting dates
-//    			do later the_action: "start_activity" at: get_current_date() add_seconds 1;
-//    		}
-//    	}else{
-//    		day_done <- true;
-//    	}
-//    }
-    
+        
     
     action start_motion{
 //    	write get_current_date() + ": " + name + " takes vehicle: " + current_vehicle.name + " to do: " + current_activity.title;
     	is_moving_chart <- true;
+    	total_nb_paths <- total_nb_paths + 1; //TEST, to remove later
     	ask current_vehicle{
     		if species(myself.current_vehicle) != PublicTransportCard {
     			do add_passenger(myself);	
@@ -224,15 +171,7 @@ species Person skills: [scheduling] schedules: [] {
 	    		do remove_passenger(myself);
 	    	}	
 	    }
-//    	write get_current_date() + ": " + name + " starts doing: " + current_activity.title;
-    	
-    	//TODO
-//    	float lateness <- 0.0;
-//    	loop t over: journal.event_log {
-//    		if t.trip_idx = act_idx {
-//    			lateness <- lateness + t.lateness;
-//    		}
-//    	}
+
     	
     	//register next activity
     	if act_idx + 1 = length(activities) {
@@ -246,40 +185,15 @@ species Person skills: [scheduling] schedules: [] {
 			}else{
 				do later the_action: "start_activity" at: get_current_date() add_seconds 1;
 			}
-		}
-    	
-    	/*if act_idx < length(personal_agenda.activities) - 1 {
-    		if lateness > Constants[0].lateness_tolerance {
-    			write get_current_date()+ ": "+ name + " took " + lateness + " seconds more than planned to do its trip." color: #purple;    			
-    			
-    			if current_activity.priority_level <= personal_agenda.activities[act_idx+1].priority_level {
-    				//we prefer to do the current activity (priority lvl in reverse order)
-    				//here act_duration is the duration minus the theoretical travel time
-    				
-    				do later the_action: "end_activity" at: get_current_date() add_minutes (current_activity.duration + rnd(0,Constants[0].starting_time_randomiser));
-    				write get_current_date() + ": " + name + " will do " + current_activity.title + " completely." color: #purple;
-    			}else{
-    				write get_current_date() +": " + name + " will reduce the time spent on " + current_activity.title + "." color: #purple;
-    				date d <- personal_agenda.activities[act_idx+1].starting_date add_minutes rnd(0, Constants[0].starting_time_randomiser);
-	    			if d <= get_current_date() {
-	    				d <- get_current_date() add_seconds 1;
-	    			}
-	    			do later the_action: "end_activity" at: d;
-    			}
-    		}else{
-    			date d <- personal_agenda.activities[act_idx+1].starting_date add_minutes rnd(0, Constants[0].starting_time_randomiser);
-    			if d <= get_current_date() {
-    				d <- get_current_date() add_seconds 1;
-    			}
-    			do later the_action: "end_activity" at: d;
-    		}
-    	}else{
-    		//case: it was our last activity
-    		do later the_action: "end_activity" at: get_current_date() add_minutes current_activity.duration;
-    	} */   	
+		}  	
     }
     
     action walk_to(point p) {
+    	/*
+    	 * Je soupconne cette fonction de ralentir la simulation, 
+    	 * je ne l'utilise pas pour l'instant
+    	 */
+    	//write "test, fct walk to is being called";
     	color <- #darkgoldenrod;
     	float d <- distance_to(location, p) #meter ;
     	
@@ -311,7 +225,7 @@ species Person skills: [scheduling] schedules: [] {
 			}else{
 				write get_current_date() + ": Something is wrong with the fct walk_to() of: " + name color:#red;  			
     		}
-    	}    	
+    	} 	 	
     }
     
     action choose_current_vehicle {
@@ -466,6 +380,7 @@ species Person skills: [scheduling] schedules: [] {
    
    action highlight_path(int i){
 //   		//probably deprecated
+//       A REFAIRE
 //   	 	bool found <- false;
 //   		loop t over: journal.event_log {
 //   			if t.trip_idx = i {

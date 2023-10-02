@@ -41,6 +41,7 @@ species Logger skills: [scheduling] {
 	string h;
 	string m;
 	string s;
+	
 
 	
 	action real_time_log_roads{
