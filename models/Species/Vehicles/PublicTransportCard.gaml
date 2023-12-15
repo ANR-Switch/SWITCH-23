@@ -12,7 +12,12 @@
 
 model PublicTransportCard
 
-import "Vehicle.gaml"
+import "../Transports/TransportGraph.gaml"
+
+import "../Transports/TransportTrip.gaml"
+
+
+
 
 species PublicTransportCard parent: Vehicle schedules: [] {
 	list<pair<TransportStop, TransportTrip>> itinerary;
@@ -22,6 +27,7 @@ species PublicTransportCard parent: Vehicle schedules: [] {
 	int itinerary_idx <- 0;
 	Vehicle current_public_transport;
 	date start <- nil;
+	TransportGraph my_transport_graph;
 	
 	int max_waiting_time <- Constants[0].waiting_time_before_recomputing; //minutes
 	
@@ -32,7 +38,7 @@ species PublicTransportCard parent: Vehicle schedules: [] {
 //		color <- #darkgoldenrod;
 //	}
 	
-	action init_vehicle(Person _owner, float _length<-0.0#meter, float _speed<-5#km/#h, int _seats<-1){
+	action init_vehicle(Person _owner){
 		owner <- _owner;
 //		do add_passenger(owner);
 //		location <- _owner.location;
@@ -63,17 +69,17 @@ species PublicTransportCard parent: Vehicle schedules: [] {
 //			}
 			try {
 				float t1 <- machine_time;
-				ask public_transport_graph {
+				ask my_transport_graph {
 					myself.itinerary <- get_itinerary_between(myself.location, myself.my_destination);
 				}
-				_miliseconds <- _miliseconds + (machine_time - t1);
+				//_miliseconds <- _miliseconds + (machine_time - t1);
 				//write "PTCard path >>> " + (machine_time - t1) + " milliseconds" color: #green;	
 			}catch {
 				write "PublicTransportCard : TRY to get a path did not work." color:#red;
 			}
 	
 			if itinerary = nil {
-				write get_current_date() + ": " + name + " belonging to: " + owner.name +" is not able to find a itinerary between " + owner.current_building + " and " + owner.next_building color: #red;
+				//write get_current_date() + ": " + name + " belonging to: " + owner.name +" is not able to find a itinerary between " + owner.current_building + " and " + owner.next_building color: #red;
 				//write "The motion will not be done. \n The activity: " + owner.current_activity.title + " of: " + owner.name + " might be done in the wrong location." color: #orange;
 				owner.location <- owner.current_destination;
 				add get_current_date() + ": got an empty itinerary!" to: journal;
@@ -298,7 +304,7 @@ species PublicTransportCard parent: Vehicle schedules: [] {
 			}else{
 				//last element of itineraruy should only be the destination stop
 				add nil to: routes;
-				add nil to: directions;
+				add int(nil) to: directions;
 			}
 		}
 	}

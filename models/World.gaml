@@ -7,56 +7,66 @@
 */
 model World
 
-import "Species/Transports/TransportGraph.gaml"
-
-import "Species/Transports/TransportEdge.gaml"
-
-import "Utilities/GTFS_reader.gaml"
-
-import "Utilities/Constants.gaml"
-
-import "Utilities/EventManager.gaml"
-
-import "Logs/Logger.gaml"
-
-import "Species/Map/Road.gaml"
-
+import "Species/Person.gaml"	
+import "Species/Map/RoadsGraph.gaml"
 import "Species/Map/Building.gaml"
+import "Utilities/EventManager.gaml"
+import "Species/Transports/TransportGraph.gaml"
+import "Utilities/GTFS_reader.gaml"
+import "Logs/consolLog.gaml"
+import "Logs/TxtLog.gaml"
 
+//import "Logs/Logger.gaml"
+//import "Species/Transports/TransportEdge.gaml"
+//import "Utilities/Constants.gaml"
+//import "Species/Map/Road.gaml"
 //import "Utilities/Population_builder.gaml"
 
 global {
 	//FILES
 	string dataset_path <- "../includes/agglo/";
 	
-	shape_file shape_roads_CT <- shape_file(dataset_path + "roads.shp");
-	
+ 
+	//shape_file shape_roads_CT <- shape_file(dataset_path + "roads.shp");
 	shape_file shape_buildings <- shape_file(dataset_path + "buildings.shp");
+	
+	
+	//shape_file shape_buildings <- shape_file("../includes/tests/1Road/buildings.shp");
+	shape_file shape_roads_CT <- shape_file("../includes/tests/roadImportance4/roads.shp");
+
+	//shape_file shape_roads_CT <- shape_file("../includes/tests/1Road/roads.shp");
+
+	
+	
 	
 	geometry shape <- envelope(shape_roads_CT);
 	
 	string gtfs_file <- dataset_path + "gtfs/";
-	csv_file population <- csv_file("../includes/population/population_100.csv", ",", true);
+	csv_file population <- csv_file("../includes/population/population.csv", ",", true);
+	int nbBoucle <- 1;
 	
 	//SIM	
-	float step <- 86400 #seconds parameter: "Step"; //86400 for a day
+	float step <- 3600 #seconds parameter: "Step"; //86400 for a day, 3600 for an hour
 	float simulated_days <- 1 #days parameter: "Simulated_days";
 	float experiment_init_time;
 	
+	string path_algorithm <- #CHBidirectionalDijkstra    ;
+	
 	//general paramters	 
-	date starting_date <- date([1970, 1, 1, 4, 0, 0]);
-	//date sim_starting_date <- date([1970, 1, 1, 0, 0, 0]); //has to start at midnight! for activity.gaml init
+	date starting_date <- date([2023, 10, 12, 0, 0, 0]);
+	
+	//date sim_starting_date <- date([2023, 10, 12, 0, 0, 0]); //has to start at midnight! for activity.gaml init
 	float cycle_timer <- machine_time;
 
 	//modality
 	/*
 	 * ici on fixe les distributions de modalité
 	 */
-	float feet_weight <- 0.05 parameter: "Feet";
-	float bike_weight <- 0.05 parameter: "Bike";
-	float car_weight  <- 0.65 parameter: "Car";
+	float feet_weight <- 0.17 parameter: "Feet";
+	float bike_weight <- 0.13 parameter: "Bike";
+	float car_weight  <- 0.70 parameter: "Car";
 	float public_transport_weight <- 0.0 parameter: "Public_Transport";
-	
+	list<float> weights <- [feet_weight,bike_weight,car_weight,public_transport_weight];
 	//highlight path : useless now
 	/*
 	 * Ces paramètres servaient à selectionner un agent et un de ses trajet afin de le mettre en valeur dans le display, 
@@ -70,12 +80,9 @@ global {
 	//TEST
 	float _miliseconds <- 0.0;	
 	int total_nb_paths <- 0;
-	
+	list<Road> forcedRoad;
 	
 	//Graphs
-	graph car_road_graph;
-	graph feet_road_graph;
-	graph bike_road_graph;
 	TransportGraph public_transport_graph;
 	
 	int road_importance <- 4 const: true; //considers roads of importance less than or eq to this
@@ -96,15 +103,29 @@ global {
 	list<Building> exterior_working_buildings;
 	list<Building> trash_list;
 	
+	VehicleFactory factory;
+	/*Consol*/Logger log;
+	
+
+	
 	init {
+		nb_trajet <- 0;
+		pathNotFound <- 0;
+		forcing <- 0;
+		dayEnded <- 0;
 		seed <- 42.0;
 		float sim_init_time <- machine_time;
-		date init_date <- (starting_date + (machine_time / 1000));
+		//date init_date <- (starting_date	 + (machine_time / 1000));
 
 		do normalize_modality();
 		
 		////Constants 
-		create Constants; //constant file useful for other species		
+		create Constants; //constant file useful for other species
+		create VehicleFactory;
+		factory <- VehicleFactory[0];
+		
+		create ConsolLog;
+		log <- ConsolLog[0];
 		
 		//init
 		do init_event_managers; //good to do first
@@ -113,12 +134,14 @@ global {
 	 	
 	 	do init_graphs; //should be done after roads and public transports
 	 	
+	 	do init_delays;
+	 	
 	 	do init_persons_csv;
 		
 		//logger should be created after the other species
 		if Constants[0].log_journals or Constants[0].log_roads or Constants[0].log_traffic {
-			create Logger;
-			Logger[0].event_manager <- EventManager[0];	
+			/*create Logger;
+			Logger[0].event_manager <- EventManager[0];	*/
 			write "\nLog options activated...";
 		}else{
 			write "\nAll logging options are turned off." color: #orange;
@@ -127,9 +150,15 @@ global {
 		write "Simulation is ready. In " + (machine_time - sim_init_time)/1000.0 + " seconds." ;
 	}
 	
+	action init_delays{
+		loop i over:Road{
+			ask i {do init_delay;}
+		}
+	}
 	
 	action init_event_managers{
 		create EventManager number: nb_event_managers;
+		current_date <- starting_date;
 	}
 	
 	action init_persons_csv {
@@ -137,7 +166,7 @@ global {
 		write "\nPersons...";
 		float t1 <- machine_time;
 		
-		loop i from:0 to: 10 {
+		loop i from:0 to: nbBoucle-1 {
 		
 			create Person from: population with: [
 				/*first_name::read("nom"),
@@ -150,6 +179,7 @@ global {
 				starting_dates::init_read_dates(string(read("depart")))
 			]{		
 				event_manager <- EventManager[0];
+				self.log <- myself.log;
 					
 				
 	//			//buildings
@@ -163,7 +193,8 @@ global {
 				leasure_building <- select_building(leasure_buildings);
 				
 	//			//vehicle
-				do choose_vehicles;
+				
+				do choose_vehicles(weights,factory);
 				
 	//			//activities
 				do register_activities; //after link to eventmanager
@@ -230,6 +261,7 @@ global {
 											topo_id::string(read("ID")),
 											allowed_vehicles::string(read("VEHICULES")),
 											importance::int(read("IMPORTANCE")),
+											nature::string(read("NATURE")),
 											event_manager::EventManager[0]
 		] {
 			
@@ -251,6 +283,8 @@ global {
 			if oneway = "Sens inverse" {				
 				shape <- polyline(reverse(shape.points));
 			}
+			self.log<-myself.log;
+			//do log_capacity();
 		}
 		write "There are " + length(Road) + " Roads loaded in " + (machine_time-t1)/1000.0 + " seconds.";
 		write "" + length(Road where each.had_to_increase_capacity) + " roads had to increase their maximum capacity." color:#orange;
@@ -288,7 +322,7 @@ global {
 	 	road_subset <- Road where (each.car_track and each.importance <= road_importance);
 	 	road_weights_map <- road_subset as_map (each:: (each.shape.perimeter/each.max_speed));
 	 	car_road_graph <- as_edge_graph(road_subset) with_weights road_weights_map;
-	 	car_road_graph <- car_road_graph with_shortest_path_algorithm #TransitNodeRouting;
+	 	car_road_graph <- car_road_graph with_shortest_path_algorithm path_algorithm ;
 	 	car_road_graph <- directed(car_road_graph);
 	 	
 	 	//estimate for info
@@ -398,24 +432,65 @@ global {
 		}
 		
 		write "\n-> The cycle took " + (machine_time-cycle_timer)/1000 + " seconds to simulate " + step + " seconds.";
-		write "-> Sim_time/Real_time ratio: " + int((1000*step)/(machine_time-cycle_timer)) ;
+		if(machine_time-cycle_timer != 0)
+		{
+			write "-> Sim_time/Real_time ratio: " + int((1000*step)/(machine_time-cycle_timer)) ;
+		}
 		cycle_timer <- machine_time;
-		write "-> Current simulation date : " + current_date add_seconds(-step) + "\n";		
+		write "-> Current simulation date : " + current_date add_seconds(-step) + "\n";
+		loop i over:Road{
+	 			ask i {if self.topo_id ='TRONROUT0000000073493439 '{ write "current capacity : "+current_capacity/4+" over : "+max_capacity/4+"\ninflow : "+inflow+"\naccepted : "+accepted+"\noutflow : "+outflow; inflow<- 0;outflow<-0; accepted <- 0; }} 
+	 		}
+	 		
+	 	if (EventManager[0].size = 0){
+	 		
+	 		loop a over:Person{
+		 		if !a.day_done{
+		 			ask a{
+		 				//do start_motion();
+		 				do later the_action:"travel_not_end" at:date([2023, 10, 12, 23, 59, 59])+15#h ;
+		 				if a.is_moving_chart{
+		 					//write current_vehicle.current_road color:#red;
+		 				}
+		 				
+		 			}
+		 		}
+		 	}
+	 	}
 		
 		/*
 		 * A la fin de la simu : 
 		 */
-	 	if Person count(each.day_done) = length(Person) { //and TransportTrip count(each.alive) = 0 {
+	 	if (current_date>=starting_date+31#h){//Person count(each.day_done) = length(Person) { //and TransportTrip count(each.alive) = 0 {
 	 		write "\n-> The experiment took: " + (machine_time - experiment_init_time)/1000.0 + " seconds.\n" color:#green;
-	 		
+	 		loop i over:Road{
+	 			if (i.self_forced>0){
+	 				add i to: forcedRoad;		
+	 			}
+	 			if(i.fail>0){
+	 				write i.topo_id+" failed : "+i.fail;
+	 			}
+	 			try{
+	 				//ask i {do log_frenquency();}
+	 			}
+	 			
+	 		}
+	 		save forcedRoad format:shp to:'forcedRoad.shp';
+	 		ask log {do log('end_of_simulation_logs');}
+	 		//ask log {do log('frequentation entre empalot et rangueil : '+day_frequentation_Empalot_Rangeuil);}
 	 		//LOGS
-	 		if !empty(Logger) {
+	 		/*if !empty(Logger) {
 	 			write "Logging, please wait...";
 		 		ask Logger[0] {
 		 			do save_real_time_logs;
 		 			do save_journal_logs;
 		 		}	
-		 	}
+		 	}*/
+		 	
+		 	
+//		 	write (""+msg_sent+" message has been sent");
+//		 	write (""+msg_receive+" message has been receive");
+//		 	write (""+msg_accept+" message has been accept");
 	 		do pause;
 	 	}
 	 }
@@ -426,7 +501,7 @@ experiment "Display & Graphs" type: gui {
 	/*
 	 * Parameters
 	 */
-	parameter "Step" var: step category: "Simulation step in second" min:1.0 ;
+	parameter "Step" var: step category: "Simulation step in second" min:60.0 ;
 //	parameter "Simulated_days" var: simulated_days category: "Simulation days" min:1.0 #days;
 	parameter "Pedestrians" var: feet_weight category: "modality" min:0.0;
 	parameter "Bikes" var: bike_weight category: "modality" min:0.0;
@@ -561,6 +636,29 @@ experiment "Display only" type: gui {
 //			species Teleo;
 			
 			overlay right: "Date: " + current_date  color: #orange;
+		}
+	}
+}
+experiment "Text only"{
+	parameter "Person to select" var: Person_idx category: "Highlight path" min:0 ;
+	parameter "Path to highlight" var: Path_idx category: "Highlight path" min:0;
+	
+	parameter "count forcing" var: countForcing category: "Counter";
+	parameter "count no finded path" var: countPath category: "Counter";
+	parameter "count people who didn't ended their day" var: countDayEnded category:"Counter";
+	
+	
+	parameter "Show Path not found" var: verbosePathNotFound category: "Message";
+	parameter "Show forcing message when road congested message" var: verboseRoadForcing category: "Message";
+	parameter "Show activity message" var: verboseActivity category: "Message";
+	parameter "Show people ending day" var: verboseEndDay category: "Message";
+	parameter "Show travel message" var:verboseTravel category: "Message";
+	
+	user_command "Display parameter" category: "Highlight path" color:#red {
+		if Person_idx < length(Person) and Person_idx > -1 {
+			ask Person[Person_idx] {do highlight_path(Path_idx);}
+		}else{
+			write "Person_idx is out of range ! Try again." color:#red;
 		}
 	}
 }

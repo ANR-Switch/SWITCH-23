@@ -9,21 +9,31 @@
 
 model Person
 
-import "Vehicles/PublicTransportCard.gaml"
+import "../Logs/Logger.gaml"
 
-import "../Logs/Journal.gaml"
-
-import "../Utilities/Constants.gaml"
-
-import "Vehicles/Feet.gaml"
-
-import "Vehicles/Bike.gaml"
-
-import "Vehicles/Car.gaml"
+import "Vehicles/VehicleFactory.gaml"
 
 import "../Utilities/EventManager.gaml"
 
-import "Activities/Agenda.gaml"
+import "Map/Building.gaml"
+
+import "Vehicles/PublicTransportCard.gaml"
+
+
+//import "../Logs/Journal.gaml"
+
+import "../Utilities/Constants.gaml"
+
+//import "Vehicles/Feet.gaml"
+
+//import "Vehicles/Bike.gaml"
+
+//import "Vehicles/Car.gaml"
+
+
+
+//import "../Utilities/EventManager.gaml"
+
 
 
 species Person skills: [scheduling] schedules: [] {
@@ -62,15 +72,12 @@ species Person skills: [scheduling] schedules: [] {
 	rgb color <- #black;
 	Vehicle current_vehicle;
 	list<Vehicle> vehicles <- [];
-	Feet my_feet;
+
 	
 	//output display
 	bool is_moving_chart <- false; //used for display
 	
-	init {
-		create Feet returns: f;
-	  	my_feet <- f[0];
-	}
+	Logger log;
 
 	
 	Building select_building (list<Building> l){
@@ -83,16 +90,23 @@ species Person skills: [scheduling] schedules: [] {
 	    	date d;
 	    	//loop i from:0 to: length(activities)-1 {
     		d <- starting_dates[0] add_minutes rnd(-floor(Constants[0].starting_time_randomiser/2), floor(Constants[0].starting_time_randomiser/2));
+	  		msg_sent <- msg_sent+1;
 	  		do later the_action: "start_activity" at: d ;
 	    	//}	
 	    }
     }
     
-    action start_activity {    	
+    action travel_not_end{
+    	write self.name + " didnt end his day";
+    }
+    
+    action start_activity {  	
     	assert !empty(vehicles) warning: true;
     	act_idx <- act_idx + 1;
-    	//write get_current_date() + ": " + name + " starts activity" + act_idx color:#green;
-
+    	if(verboseActivity){
+    		ask log{do log(myself.get_current_date() + ": " + myself.name + " starts activity" + myself.act_idx );} 
+    	}
+    	
 		switch int(activities[act_idx]){
 			match 0 {
 				current_destination <- any_location_in(living_building);
@@ -129,7 +143,9 @@ species Person skills: [scheduling] schedules: [] {
 				next_building <- studying_building;
 			}
 			default {
-				write "Weird activity !" color: #red;
+				/*if(verboseActivity){
+					write "Weird activity !" color: #red;
+				}*/
 			}
 		}
     	
@@ -142,16 +158,21 @@ species Person skills: [scheduling] schedules: [] {
 				do start_motion;	
 //			}
 		}else{
-			write name + " is already at its destination. It will do its activity directly.";
+			/*if(verboseActivity){
+				write name + " is already at its destination. It will do its activity directly.";
+			}*/
 			do end_motion;
 		}
     }
         
     
     action start_motion{
-//    	write get_current_date() + ": " + name + " takes vehicle: " + current_vehicle.name + " to do: " + current_activity.title;
+    	if(verboseTravel){
+    		ask log{do log (myself.get_current_date() + ": " + myself.name + " takes vehicle: " + myself.current_vehicle.name);} 
+    	}
+    	
     	is_moving_chart <- true;
-    	total_nb_paths <- total_nb_paths + 1; //TEST, to remove later
+    	//total_nb_paths <- total_nb_paths + 1; //TEST, to remove later
     	ask current_vehicle{
     		if species(myself.current_vehicle) != PublicTransportCard {
     			do add_passenger(myself);	
@@ -176,19 +197,27 @@ species Person skills: [scheduling] schedules: [] {
     	//register next activity
     	if act_idx + 1 = length(activities) {
 			//daydone
-			//write get_current_date() + ": " + name + " ended its day correctly.";
+			if(countDayEnded){
+				dayEnded <- dayEnded+1;
+			}
+			if(verboseEndDay){
+				ask log{do log(myself.get_current_date() + ": " + myself.name + " ended its day correctly.");} 
+			}
 			day_done <- true;
 		}else if act_idx + 1 < length(activities){
 				date d <- starting_dates[act_idx+1] add_minutes rnd(-floor(Constants[0].starting_time_randomiser/2), floor(Constants[0].starting_time_randomiser/2));
 			if get_current_date() < d {
+				msg_sent <- msg_sent+1;
     	  		do later the_action: "start_activity" at: d ;
 			}else{
+				msg_sent <- msg_sent+1;
 				do later the_action: "start_activity" at: get_current_date() add_seconds 1;
 			}
 		}  	
     }
     
     action walk_to(point p) {
+    	msg_receive <- msg_receive+1;
     	/*
     	 * Je soupconne cette fonction de ralentir la simulation, 
     	 * je ne l'utilise pas pour l'instant
@@ -203,6 +232,7 @@ species Person skills: [scheduling] schedules: [] {
     		float angle <- atan2(p.y - location.y, p.x - location.x);
     		location <- point(location.x + walking_speed * cos(angle), location.y + walking_speed * sin(angle));
     		
+    		msg_sent <- msg_sent+1;
     		do later the_action: "walk_to" with_arguments: map("p"::p) at:get_current_date() add_seconds 1;
     	}else{
     		//motion over
@@ -246,7 +276,6 @@ species Person skills: [scheduling] schedules: [] {
 	    			}
 	    			match Bike {
 	    				ask v {
-	    					planned_path <- compute_path_between(v.location, myself.current_destination);
 	    				}
 	    				if planned_path != nil {
 	    					float t;
@@ -290,90 +319,13 @@ species Person skills: [scheduling] schedules: [] {
 		}
     }
     
-    action choose_vehicles {
-    	//this method is called at initialisation in order to select the persons' vehicles in a preference order
-    	int choice <- rnd_choice([feet_weight, bike_weight, car_weight, public_transport_weight]);
-    	switch int(choice) {
-    		match 0 {
-	    	  	ask my_feet {
-	    	  		do init_vehicle(myself);
-	    	  	}
-//	    	  	if flip(0.5) {
-//	    	  		create Car returns: c;
-//		    	  	ask c {
-//		    	  		do init_vehicle(myself);
-//		    	  	}
-//	    	  	}else{
-//	    	  		create Bike returns: b;
-//		    	  	ask b {
-//		    	  		do init_vehicle(myself);
-//		    	  	}
-//	    	  	}	    	  	
-    		}
-    		match 1 {
-    			create Bike {
-	    	  		do init_vehicle(myself);
-	    	  	}
-//	    	  	if flip(0.5) {
-//	    	  		create Car returns: c;
-//		    	  	ask c {
-//		    	  		do init_vehicle(myself);
-//		    	  	}
-////		    	  	create Feet returns: f;
-////		    	  	ask f {
-////		    	  		do init_vehicle(myself);
-////		    	  	}
-//	    	  	}else{
-////	    	  		create Feet returns: f;
-////		    	  	ask f {
-////		    	  		do init_vehicle(myself);
-////		    	  	}
-//	    	  	}
-    		}
-    		match 2 {
-    			create Car {
-	    	  		do init_vehicle(myself);
-	    	  	}
-//	    	  	if flip(0.5) {
-////	    	  		create Feet returns: f;
-////		    	  	ask f {
-////		    	  		do init_vehicle(myself);
-////		    	  	}
-//	    	  	}else{
-//	    	  		create Bike returns: b;
-//		    	  	ask b {
-//		    	  		do init_vehicle(myself);
-//		    	  	}
-////		    	  	create Feet returns: f;
-////		    	  	ask f {
-////		    	  		do init_vehicle(myself);
-////		    	  	}
-//	    	  	}
-    		}
-    		match 3 {
-    			create PublicTransportCard {
-	    	  		do init_vehicle(myself);
-	    	  	}
-//	    	  	if flip(0.5) {
-////	    	  		create Feet returns: f;
-////		    	  	ask f {
-////		    	  		do init_vehicle(myself);
-////		    	  	}
-//	    	  	}else{
-//	    	  		create Bike returns: b;
-//		    	  	ask b {
-//		    	  		do init_vehicle(myself);
-//		    	  	}
-////		    	  	create Feet returns: f;
-////		    	  	ask f {
-////		    	  		do init_vehicle(myself);
-////		    	  	}
-//	    	  	}
-    		}
-    		default {
-    			write name + " has a ill-defined vehicle !" color: #red;
-    		}
+    action choose_vehicles (list<float> weights,VehicleFactory factory) {
+    	
+    	ask factory{
+    		myself.current_vehicle <-  create_vehicles(weights,myself,myself.log);
     	}
+    	//this method is called at initialisation in order to select the persons' vehicles
+    	
     }
     
 

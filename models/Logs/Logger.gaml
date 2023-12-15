@@ -10,7 +10,38 @@ model Logger
 
 import "../Species/Person.gaml"
 
-/* observer */
+global{
+	bool verboseActivity <- false;
+	bool verboseEndDay <- false;
+	bool verbosePathNotFound <- false;
+	bool verboseRoadForcing <- false;
+	bool countForcing <- false;
+	bool countPath <- false;
+	bool countDayEnded <- true;
+	bool verboseTravel <- false;
+	bool latenesslogged <- false;
+	bool countTrajet <-true;
+	
+	int dayEnded;
+	int pathNotFound;
+	int forcing;
+	int nb_trajet;
+	
+	int msg_sent;
+	int msg_receive;
+	int msg_accept;
+}
+
+species Logger{
+		action log(string mess) ;
+}
+
+
+
+
+
+
+/* observer 
 
 species Logger skills: [scheduling] {
 	//files
@@ -180,4 +211,4 @@ species Logger skills: [scheduling] {
 			do real_time_log_traffic();
 		}
 	}
-}
+}*/

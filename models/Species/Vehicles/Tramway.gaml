@@ -9,7 +9,7 @@
 
 model Tramway
 
-import "../Transports/TransportTrip.gaml"
+//import "../Transports/TransportTrip.gaml"
 
 import "Vehicle.gaml"
 
@@ -24,7 +24,7 @@ species Tramway parent: Vehicle schedules: [] {
 	}
 	
 	
-	action init_vehicle(Person _owner, float _length<-11.0#meter, float _speed<-90#km/#h, int _seats<-40){
+	action init_vehicle(Person _owner){
 		//_owner is to match the other vehicle classes, but a common transport doesnot need one
 //		owner <- _owner; //random assignement, useless except to use get_current_date of Vehicle.gaml
 //		length <- _length;
@@ -69,9 +69,6 @@ species Tramway parent: Vehicle schedules: [] {
 		}
 	}
 	
-	path compute_path_between(point p1, point p2) {
-		return path_between(car_road_graph, p1, p2);
-	}
 	
 	action take_passengers_out {
 		PublicTransportCard tc;

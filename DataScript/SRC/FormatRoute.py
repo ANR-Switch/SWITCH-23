@@ -18,11 +18,11 @@ def loc_road(src, dst):
 
 def set_vehicule(r):
     ret = []
-    if(r['ACCES_VL']!='Physiquement impossible'):           #Vehicule léger
+    if(r['ACCES_VL']!='Physiquement impossible'):           #Vehicule leger
         ret.append(0)
     if(r['CYCLABLE_G']!='' or r['CYCLABLE_D']!=''):  #Velo
         ret.append(1)
-    if(r['ACCES_PED']!=''):                             #Piéton
+    if(r['ACCES_PED']!=''):                             #Pieton
         ret.append(2)
     if(r['BUS']!=''):                                   #Bus
         ret.append(3)

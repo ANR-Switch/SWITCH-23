@@ -1,0 +1,78 @@
+/**
+
+
+* Name: NewTestExperiment
+* This wizard creates a new test experiment 
+* Author: flavi
+* Tags: 
+*/
+
+model testRoad
+
+import "../models/Species/Map/Road.gaml"
+
+
+experiment TestRoad type: test autorun: true {
+	
+	/** global definitions, variables and actions here */
+	Road route;
+	Person bob;
+	Car voiture;
+		
+	init{
+		create EventManager number:1;
+		create Constants;
+		write "init";
+		
+		create Person number:10 with:[]{}
+		create Road number:1 with:[
+			lanes::1,
+			max_speed::50.0 #km/#h,
+			oneway::'no',
+			topo_id::'1',
+			allowed_vehicles::'0',
+			importance::1
+		]{
+			event_manager<-EventManager[0];
+			max_capacity <- 10.0;
+	 	}
+		
+		create Car number:route.max_capacity with:[speed::50#km/#h,owner::bob,length::1]{my_path<- path([{12,12},{30,30},{50,50}]);}
+		
+		ask bob {do link_event_manager(EventManager[0]);}
+	}
+	/** initialization to run before each of the tests */	
+	setup {
+		
+		
+	 	bob <- Person[0];
+	 	voiture <- Car[0];
+	 	route<- Road[0];
+		
+	}
+	
+	test "Test_init_road_speed" {
+	/** Insert here any assertion you need to test */
+		assert route.max_capacity = 10;
+	}
+	
+	test "Road_accept_one_vehicules"{
+		ask route {
+			do accept(myself.voiture /*,current_date plus_hours 1*/);
+		}
+		//write route.current_capacity;
+		assert route.current_capacity = 1;
+		assert route.max_capacity-route.current_capacity = 9;
+	}
+	
+	test "Test_congestion"{
+		ask route {
+			loop i over:Car{
+				do accept(i /*,current_date plus_hours 1*/);
+			}
+			
+		}
+		write route.current_capacity;
+	}
+	
+}

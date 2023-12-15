@@ -8,6 +8,10 @@
 
 model TransportTrip
 
+import "TransportEdge.gaml"
+
+import "TransportRoute.gaml"
+
 import "../Vehicles/Tramway.gaml"
 
 import "../Vehicles/Teleo.gaml"
@@ -16,9 +20,7 @@ import "../Vehicles/Metro.gaml"
 
 import "../Vehicles/Bus.gaml"
 
-import "../../World.gaml"
-
-import "TransportStop.gaml"
+//import "../../World.gaml"
 
 /* Insert your model definition here */
 

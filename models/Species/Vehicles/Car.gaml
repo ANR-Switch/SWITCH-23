@@ -11,22 +11,29 @@
 
 model Car
 
+import "../../Logs/consolLog.gaml"
+
 import "Vehicle.gaml"
+
 
 species Car parent: Vehicle schedules: [] {
 	rgb parking_color <- rgb([165, 165, 0]);
 	rgb driving_color <- #yellow;
+	bool countPath;
+	bool verboseCarPath;
 	
 	init {
 		color <- parking_color;
 	}
 	
-	action init_vehicle(Person _owner, float _length<-Constants[0].car_size #meter, float _speed<-130#km/#h, int _seats<-4){
+	action init_vehicle(Person _owner, Logger l){
+		log <- l;
+		my_graph <- car_road_graph;
 		owner <- _owner;
 //		do add_passenger(owner);
-		length <- _length;
-		speed <- _speed;
-		seats <- _seats;
+		length <- Constants[0].car_size #meter;
+		speed <- 130#km/#h;
+		seats <- 4;
 		event_manager <- owner.event_manager;
 		add self to: owner.vehicles;
 //		owner.current_vehicle <- self;		
@@ -39,135 +46,16 @@ species Car parent: Vehicle schedules: [] {
 //		location <- l[0];
 	}
 	
-	path compute_path_between(point p1, point p2) {
-		return path_between(car_road_graph, p1, p2);
-	}
-	
-	action goto(point dest){
-		if !empty(passengers) {
-			//init
-			current_road <- nil;
-			owner.location <- location;
-			my_destination <- dest;
-			
-			float t1 <- machine_time;
-			my_path <- compute_path_between(location, my_destination);
-						
-			/*
-			/////////TEST
-			//create a random path
-			int random1 <- rnd(15,150);
-			int random2;
-			
-			my_path <- nil;
-			list<Road> roads <- [];
-			
-			
-			loop i from: 0 to: random1 {
-				random2 <- rnd(length(Road)-1);
-				
-				if Road[random2].car_track and !(roads contains Road[random2]){
-					add Road[random2] to: roads;	
-				}
-			}
-			my_path <- roads;
-			//fin test
-			*/
-			
-			_miliseconds <- _miliseconds + (machine_time - t1);
-			//write "Car path >>> " + (machine_time - t1) + " milliseconds" color: #green;
-			
 
-			if my_path = nil {
-				write get_current_date() + ": " + name + " belonging to: " + owner.name +" is not able to find a path between " + owner.current_building + " and " + owner.next_building color: #red;
-				owner.location <- owner.current_destination;
-				//do trash_log;
-				ask owner {
-					do end_motion;
-				}
-			}else{
-				if !empty(my_path.edges) {
-					do propose;			
-				}else{
-					write get_current_date() + ": " + owner.name + " called goto on " + name + " but the path computed is null.";
-					//do trash_log;
-					ask owner {
-						do end_motion;
-					}
-				}	
-			}
-		}else{
-			write get_current_date() + ": " + name + " is asked to go somewhere without a driver !" color: #red;
-		}
-	}
 	
-	action propose {
-		//this method is similar to the propose done by roads. It should be used only at the init of the motion
-		Road r <- Road(my_path.edges[0]);
-		ask r {
-			do treat_proposition(myself);
-		}
-	}
-	
-	action enter_road(Road road){
-		//log
-		if current_road != nil {
-			//here we register previous road info in the log
-			float t;
-			ask current_road {
-				t <- get_theoretical_travel_time(myself);
-			}
-			int road_lateness <- int((get_current_date() - log_entry_date) - t);
-			do log(road_lateness);
-		}
-		log_entry_date <- get_current_date();
-		//
-		
-		color <- driving_color;
-		current_road <- road;
-		do move_to(road.location);
-			
-		remove index: 0 from: my_path.edges;
-	}
-	
-	action arrive_at_destination {		
-		//delete from previous road
-		if current_road != nil {
-			//log
-			float t;
-			ask current_road {
-				t <- get_theoretical_travel_time(myself);
-			}
-			int road_lateness <- int((get_current_date() - log_entry_date) - t);
-			do log(road_lateness);
-			//
-			
-			list<point> p <- current_road.displayed_shape closest_points_with(owner.current_destination);
-			do move_to(p[0]);
-			ask current_road {
-				bool found <- remove(myself);	
-				assert found warning: true;
-			}	
-		}else{
-			write get_current_date() + ": Something is wrong with " + name + "\n Belonging to " + owner.name color:#orange;
-		}
-		color <- parking_color;
-		current_road <- nil;
-		
-		ask owner {
-			//do walk_to(current_destination); //this may kill the vehicle so make sure this is our last action //TRYING without walk_to fct
-			location <- current_destination; //remove these two lines 
-			do end_motion;
-		}
-	}
-	
+/* 	
 	action trash_log {
 		string output_path <- "C:\\Users\\coohauterv\\git\\SWITCH-23\\output\\";
 		string the_file <- output_path + "failed_buildings.csv" ;
 		save [owner.current_building.db_id, owner.next_building.db_id] to: the_file format:"csv" rewrite:false;
 	
 	}
-	
+*/	
 	aspect default {
 		draw circle(10) color: color border: #black;
 	}

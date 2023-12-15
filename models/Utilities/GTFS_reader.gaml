@@ -10,11 +10,11 @@
 
 model GTFSreader
 
-import "../Species/Transports/TransportRoute.gaml"
+//import "../Species/Transports/TransportRoute.gaml"
 
 import "../Species/Transports/TransportTrip.gaml"
 
-import "../Species/Transports/TransportStop.gaml"
+//import "../Species/Transports/TransportStop.gaml"
 
 species GTFSreader schedules: [] {
 	

@@ -136,7 +136,7 @@ species Population_builder schedules: [] {
 				location <- any_location_in(living_building);
 				current_building <- living_building;
 				working_building <- select_building(working_buildings);
-				exterior_working_building <- select_building(exterior_working_buildings);
+				//exterior_working_building <- select_building(exterior_working_buildings);
 				studying_building <- select_building(studying_buildings);
 				commercial_building <- select_building(commercial_buildings);
 				leasure_building <- select_building(leasure_buildings);

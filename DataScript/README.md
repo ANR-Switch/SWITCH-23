@@ -69,7 +69,7 @@ pour télécharger la bd topographique d'une nouvelle region :
 ````
 Pour modifier les infrastructures routier sur une zone d'étude deja existant, vous pouvez les modifiers directement
 dans les fichiers TRONCON_DE_ROUTE et BATIMENT en respectant le format de données de la bd topo.
-Pour cela vous pouvez utiliser un logiciel comme qgis our arcgis.
+Pour cela vous pouvez utiliser un logiciel comme qgis ou arcgis.
 ````
 ###### Pour modifier la population : 
 ````

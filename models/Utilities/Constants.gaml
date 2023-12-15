@@ -9,7 +9,7 @@
 
 model Constants
 
-species Constants schedules: [] {
+species Constants {
 	/*
 	 * this factor is to reduce the capacity of the roads to avoid having to simulate the whole population.
 	 * One can model 1/10th of the population by reducing the roads' capacity of a factor 10 too.
@@ -50,11 +50,11 @@ species Constants schedules: [] {
 	/*
 	 * Constantes classiques des modèles routiers. Laisser sur ces valeurs.
 	 */
-	float alpha <- 0.15 const:true;
-	float beta <- 4.0 const:true;
+	float alpha <- 0.15 const:true; //0.15
+	float beta <- 4.0 const:true;   //4.0
 	
 	/* temps avant qu'une voiture s'insere de force sur la route, pour défaire les deadlocks */
-	int deadlock_patience <- 2 const:true; //minutes
+	int deadlock_patience <- 120 const:true; //seconde
 	
 	////TransportGraph.gaml
 	/*
@@ -86,4 +86,5 @@ species Constants schedules: [] {
 	int connection_penalty <- 100 const:true; //minutes, it is to make the graph minimize the change between edges
 
 }
+
 

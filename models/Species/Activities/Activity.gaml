@@ -20,9 +20,9 @@ species Activity schedules: [] {
 	int duration;
 	point activity_location;
 	
-	action set_starting_date (date d) {
+	/*action set_starting_date (date d) {
 		starting_date <- d add_minutes starting_minute;
-	}
+	}*/
 	
 //	action choose_location (list<Building> living_buildings, list<Building> working_buildings){
 //		if type=0 {
