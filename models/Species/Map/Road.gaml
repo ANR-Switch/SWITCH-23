@@ -14,7 +14,7 @@ import "../Vehicles/Vehicle.gaml"
 
 species Road skills: [scheduling] schedules: [] {
 	string topo_id;
-	int lanes <- 1; //From shapefile 
+	int lanes; //From shapefile 
 	float max_speed ;//<- 50.0 #km/#h; // From shapefile //must be then transformed in m/s
 	string oneway <- "no"; //From shapefile
 	string allowed_vehicles;
@@ -33,7 +33,7 @@ species Road skills: [scheduling] schedules: [] {
 	bool public_transport_track <- false;	
 	
 	//traffic attributes
-	float base_capacity <-shape.perimeter * lanes;
+	float base_capacity <-shape.perimeter#m * lanes;
 	float current_capacity <- 0.0;
 	float max_capacity <- base_capacity;
 	float alpha <- Constants[0].alpha;
@@ -48,7 +48,7 @@ species Road skills: [scheduling] schedules: [] {
 	list<pair<Vehicle, date>> _queue; //queue is a build-in name so we use _queue TODO: use a map ?
 	list<Vehicle> waiting_list;
 	
-	int carOnTheRoad;
+	
 	
 	
 	//Graph :
@@ -66,6 +66,8 @@ species Road skills: [scheduling] schedules: [] {
 	int accepted;
 	int daily_frequentation <- 0;
 	int fail <- 0;
+	int ratio_blocked <-0;
+	int blocked <-0;
 	//output display
 	bool is_jammed <- false;
 	bool is_highlight <- false;
@@ -123,20 +125,22 @@ species Road skills: [scheduling] schedules: [] {
 		float speed <- max_speed/3.6;
 		max_speed <- speed #m/#s;
 		
-		if topo_id = 'TRONROUT0000000073494421'{
-			//do die;
-		}
+		/*if topo_id = 'TRONROUT0000000073494421'{
+			do die;
+		}*/
 		
 	
 	}
 	
 	float compute_time{
+		//write shape.perimeter / max_speed ;
 		return shape.perimeter / max_speed ;
+		
 	}
 	
 	action init_delay{
-		outflow_delay <- 0.0;
-		inflow_delay <- 0.0;
+		outflow_delay <- 2.0;
+		inflow_delay <- 2.0;
 		
 		if (nature!="Type autoroutier" 	and nature!="Bretelle"){
 			if(lanes = 2 ){
@@ -203,14 +207,13 @@ species Road skills: [scheduling] schedules: [] {
 	}
 	
 	action accept(Vehicle vehicle){
-		msg_accept <- msg_accept+1;
-		accepted <- accepted +1;
+		//accepted <- accepted +1;
 		date leave_date;
 		float speed <- min(vehicle.speed, max_speed);
 		float t_min <- ceil(shape.perimeter / speed);//minimum time spent on the road
-		if(t_min < 1.0){
-			t_min <- 1.0;
-		}
+//		if(t_min < 1.0){
+//			t_min <- 1.0;
+//		}  //TODO COMMENT ?
 		
 
 		switch species(vehicle){
@@ -226,22 +229,22 @@ species Road skills: [scheduling] schedules: [] {
 				msg_sent <- msg_sent+1;
 				do later the_action: "propose" with_arguments: map("vehicle"::vehicle) at: leave_date;
 			}
-			match Car {
+			match_one [Car,ResidualVehicle] {
 				t_min <- t_min / speed_factor;
 			
 				if empty(_queue){
 					//case: the vehicle can only go out if it's the first in queue
 					leave_date <- get_current_date() add_seconds t_min;
 					do add(vehicle, leave_date);
-					msg_sent <- msg_sent+1;
+					
 					do later the_action: "propose" with_arguments: map("vehicle"::vehicle) at: leave_date;
 				}else{
 					//case: is there a non overtakable vehicle in front of us ?
-					bool _bool <- is_there_blocking_vehicle();
+					//bool blocked <- is_there_blocking_vehicle();
 	
-					if _bool {
+					if is_there_blocking_vehicle() {
 						float capacity_ratio <- compute_capacity_ratio_for_traffic();
-						//float t <- t_min * ( 1 + alpha * capacity_ratio ^ beta );
+						//float t <- t_min * ( 1 + alpha * capacity_ratio ^ beta ); //TODO retry
 						float t <- t_min;
 						leave_date <- get_current_date() add_seconds t;
 						//case: we do not schedule a leaving time yet
@@ -250,7 +253,7 @@ species Road skills: [scheduling] schedules: [] {
 						//case: there are some vehicle in front of us but we can overtake them (they are pedestrians or cyclists)
 						leave_date <- get_current_date() add_seconds t_min;
 						do add(vehicle, leave_date);
-						msg_sent <- msg_sent+1;
+						
 						do later the_action: "propose" with_arguments: map("vehicle"::vehicle) at: leave_date;
 					}
 				}	
@@ -290,7 +293,7 @@ species Road skills: [scheduling] schedules: [] {
 	}
 	
 	action propose(Vehicle vehicle){
-		msg_receive <- msg_receive+1;
+		//write "propose";
 		
 		//this method is called by a source road (vehicle.current_road) to a target road
 		/*if species(vehicle) = Bus {
@@ -308,6 +311,7 @@ species Road skills: [scheduling] schedules: [] {
 			}
 		}else{*/
 			if !empty(vehicle.my_path.edges) {
+				//write "path not empty";
 				Road next_road <- Road(vehicle.my_path.edges[0]);
 				ask next_road {
 					do treat_proposition(vehicle);
@@ -315,6 +319,7 @@ species Road skills: [scheduling] schedules: [] {
 			}else{
 				//end of action
 				ask vehicle {
+					//write "arrive at destination";
 					do arrive_at_destination;
 				}
 			}	
@@ -322,9 +327,8 @@ species Road skills: [scheduling] schedules: [] {
 	}
 	
 	action treat_proposition(Vehicle vehicle){
-		msg_receive <- msg_receive+1;
-		inflow <- inflow+1;
-		carOnTheRoad <-carOnTheRoad+1;
+		
+		
 		if (current_capacity + vehicle.length <= max_capacity) or species(vehicle) = Feet or species(vehicle) = Bike {			
 			do accept(vehicle);
 		}else{			
@@ -337,25 +341,26 @@ species Road skills: [scheduling] schedules: [] {
 		}
 	}
 	
-	action schedule_next_leaving_width_vehicle {
+	action schedule_next_leaving_width_vehicle { //TODO ???
 		loop v over: _queue {
 			if species(v.key) = Car or species(v.key) = Bus { 
 				//next car leaving (pedestrian or bikes are not concerned) only the width-vehicles can not be schedule if they are not first in queue
 				date leave_date <- v.value;
 				
 				//here last_exit is like get_current_date()
-				if leave_date < last_exit add_seconds outflow_delay {
-					leave_date <- last_exit add_seconds outflow_delay ; //the +1 matters here (not sure why though)
+				if leave_date < self.last_exit add_seconds outflow_delay {
+					leave_date <- self.last_exit add_seconds outflow_delay ; //the +1 matters here (not sure why though)
 				}
 				msg_sent <- msg_sent+1;
 				do later the_action: "propose" with_arguments: map("vehicle"::v.key) at: leave_date;
-				return;
+				return; //TODO BREAK ?
 			}
 		}
 	}
 	
 	action update_waiting_list {
-		msg_receive <- msg_receive+1;
+		//technically wa may have cases where we can accept a waiting car but that was not the first to register (like in a cross road section)
+		//list<Vehicle> trash;
 		list<Vehicle> trash;
 		//technically wa may have cases where we can accept a waiting car but that was not the first to register (like in a cross road section)
 		loop e over: waiting_list {
@@ -371,32 +376,45 @@ species Road skills: [scheduling] schedules: [] {
 		if empty(waiting_list) {
 			is_jammed <- false;
 		}
+		 
+		 
+		 
+//		loop e over: waiting_list {
+//			if (current_capacity + e.length <= max_capacity){
+//				do accept(e);
+//				remove e from: waiting_list;
+//			}
+//		}
+//	
+//		if empty(waiting_list) {
+//			is_jammed <- false;
+//		}
 	}
 	
 	bool remove(Vehicle vehicle){
-		//max_capacity <- base_capacity;
-		//this method should be called by road target on road source
-		int _idx <- 0; //we have to do it with an idex because queue is a pair.
+//		//max_capacity <- base_capacity;
+//		//this method should be called by road target on road source
+		int _idx <- 0; //we have to do it with an idex because queue is a list of pair.
 		loop e over: _queue {
 			if e.key = vehicle {
-				outflow <- outflow+1;
+				//outflow <- outflow+1;
 				current_capacity <- current_capacity - vehicle.length;
 				color <- rgb(255 * (current_capacity / max_capacity), 0, 0);
 				last_exit <- get_current_date();
-				remove index: _idx from: _queue;
-				
-				//update waiting_list and next leaving car since a new slot is free
+				remove index:_idx from: _queue;
+//				
+//				//update waiting_list and next leaving car since a new slot is free
 				if species(vehicle) = Car or species(vehicle) = Bus{ 
 					do schedule_next_leaving_width_vehicle;	
 				}
-				msg_sent <- msg_sent+1;
-				do later the_action: "update_waiting_list" at: get_current_date() add_seconds gap_travel_time;
-//				write get_current_date() + " msg from remove fct, should be seen only once " + name color:#green;
+//				
+				do later the_action: "update_waiting_list" at: get_current_date() add_seconds gap_travel_time; //TODO ???
+////				write get_current_date() + " msg from remove fct, should be seen only once " + name color:#green;
 				return true;
 			}
 			_idx <- _idx + 1;
 		}
-		write name + " was asked to remove " + vehicle.name + " but was not able to find it. This should not happen !" color:#red;
+//		write name + " was asked to remove " + vehicle.name + " but was not able to find it. This should not happen !" color:#red;
 		return false;
 	}
 	
@@ -419,6 +437,9 @@ species Road skills: [scheduling] schedules: [] {
 			}
 			ask vehicle{
 				do enter_road(myself);
+				if myself.topo_id="TRONROUT0000000073486729" and (length(path_list)) < 20{
+					add self.my_path.shape to:path_list; 
+				}
 			}
 			current_capacity <- current_capacity + vehicle.length;
 			
@@ -432,7 +453,7 @@ species Road skills: [scheduling] schedules: [] {
 	}
 	
 	action deadlock_prevention(Vehicle vehicle) {
-		msg_receive <- msg_receive+1;
+		
 		//this method checks if a vehicle has been waiting a long time
 		//TODO IMPORTANT: not coorect, avec ça, le temps n'augmente pas correctement car on sera jamais au dessus de 1 en ratio capacity/max_capacity
 		if waiting_list contains vehicle {
@@ -445,40 +466,48 @@ species Road skills: [scheduling] schedules: [] {
 					write "deadlock remove failed";
 					fail <- fail+1;
 				}*/
-			
-			if current_capacity < 2 * max_capacity {
-				if countForcing{
+			if forcing < 1 {
+				add self to:forcedRoad;
+			}
+			if countForcing{
 					forcing <- forcing+1;
 				}
+			if current_capacity < 2 * max_capacity {
+				
+				
 				if(verboseRoadForcing){
-					ask log{ do log (myself.get_current_date() + ": " + vehicle.name + " is forcing its way on " + myself.name );}
+					ask log{ do log (myself.get_current_date() + ": " + vehicle.name + " is forcing its way on " + myself.topo_id );}
 				}
 				
 				float tmp_allocated_capacity <- vehicle.length + 0.01;
 				//max_tmp_alocated_test <- max_tmp_alocated_test + tmp_allocated_capacity; //TODO remove after test
+				
+				ratio_blocked <- ratio_blocked+1;
+				
 				max_capacity <- max_capacity + tmp_allocated_capacity;
-				remove vehicle from: waiting_list ;
+				
+				remove vehicle from:waiting_list ;
 				do accept(vehicle);
 				msg_sent <- msg_sent+1;
 				do later the_action: "remove_deadlock_capacity" with_arguments: map("tmp_allocated_capacity"::tmp_allocated_capacity) at: get_current_date() add_minutes deadlock_patience;
+				//ratio_blocked <- ratio_blocked-1;
 			}else{
 				//try again later
 				//we do this to prevent having the current_capacity above 10 times the max_capacity, which can quickly happen with deadlocks
 				date t <- get_current_date() add_minutes deadlock_patience;
-				msg_sent <- msg_sent+1;
 				do later the_action: "deadlock_prevention" with_arguments: map("vehicle"::vehicle) at: t;
 			}	
 		}
 	}
 	
 	action remove_deadlock_capacity (float tmp_allocated_capacity) {
-		msg_receive <- msg_receive+1;
+		
 		//its better to always have the current_capacity below the max
 		if current_capacity < max_capacity - tmp_allocated_capacity {
+			ratio_blocked <- ratio_blocked-1;
 			max_capacity <- max_capacity - tmp_allocated_capacity;	
 			is_jammed <- false;
 		}else{
-			msg_sent <- msg_sent+1;
 			do later the_action: "remove_deadlock_capacity" with_arguments: map("tmp_allocated_capacity"::tmp_allocated_capacity) at: get_current_date() add_minutes deadlock_patience;
 		}
 	}
@@ -546,6 +575,12 @@ species Road skills: [scheduling] schedules: [] {
 			ask log{do log(myself.topo_id+' day frequetation : '+ myself.daily_frequentation+'\n\t forced : '+myself.self_forced+' times.');}
 		}
 		
+	}
+	
+	action log_end{
+		if blocked > 0 {
+			ask log {do log(myself.topo_id+" get blocked : "+myself.blocked +" block - unblock : "+myself.ratio_blocked);}
+		}
 	}
 
 	aspect default {

@@ -27,14 +27,15 @@ global {
 	string dataset_path <- "../includes/agglo/";
 	
  
-	//shape_file shape_roads_CT <- shape_file(dataset_path + "roads.shp");
-	shape_file shape_buildings <- shape_file(dataset_path + "buildings.shp");
-	
-	
-	//shape_file shape_buildings <- shape_file("../includes/tests/1Road/buildings.shp");
-	shape_file shape_roads_CT <- shape_file("../includes/tests/roadImportance4/roads.shp");
 
-	//shape_file shape_roads_CT <- shape_file("../includes/tests/1Road/roads.shp");
+	shape_file shape_buildings <- shape_file(dataset_path + "buildings.shp");
+	//shape_file shape_buildings <- shape_file("../includes/tests/roadImportance1/INOUT.shp");
+	
+	
+	
+	shape_file shape_roads_CT <- shape_file("../includes/tests/roadImportance1/roads.shp");
+	//shape_file shape_roads_CT <- shape_file("../includes/tests/connected_comp/roads.shp");
+
 
 	
 	
@@ -62,9 +63,9 @@ global {
 	/*
 	 * ici on fixe les distributions de modalité
 	 */
-	float feet_weight <- 0.17 parameter: "Feet";
-	float bike_weight <- 0.13 parameter: "Bike";
-	float car_weight  <- 0.70 parameter: "Car";
+	float feet_weight <- 0.0 parameter: "Feet";
+	float bike_weight <- 0.0 parameter: "Bike";
+	float car_weight  <- 1.0 parameter: "Car";
 	float public_transport_weight <- 0.0 parameter: "Public_Transport";
 	list<float> weights <- [feet_weight,bike_weight,car_weight,public_transport_weight];
 	//highlight path : useless now
@@ -85,7 +86,7 @@ global {
 	//Graphs
 	TransportGraph public_transport_graph;
 	
-	int road_importance <- 4 const: true; //considers roads of importance less than or eq to this
+	int road_importance <- 6 const: true; //considers roads of importance less than or eq to this
 	
 	//Precalcul des chemins : en dev 
 	bool save_matrix_as_csv <- false;
@@ -117,7 +118,7 @@ global {
 		float sim_init_time <- machine_time;
 		//date init_date <- (starting_date	 + (machine_time / 1000));
 
-		do normalize_modality();
+		//do normalize_modality();
 		
 		////Constants 
 		create Constants; //constant file useful for other species
@@ -130,14 +131,15 @@ global {
 		//init
 		do init_event_managers; //good to do first
 		do init_buildings;
+		//do init_building_INOUT;
 	 	do init_roads;
-	 	
+//	 	
 	 	do init_graphs; //should be done after roads and public transports
-	 	
-	 	do init_delays;
-	 	
+//	 	
+//	 	do init_delays;
+//	 	
 	 	do init_persons_csv;
-		
+	 	
 		//logger should be created after the other species
 		if Constants[0].log_journals or Constants[0].log_roads or Constants[0].log_traffic {
 			/*create Logger;
@@ -177,7 +179,7 @@ global {
 				study_level::int(read("etudes"))*/
 				activities::init_read_activities(read("activities")),
 				starting_dates::init_read_dates(string(read("depart")))
-			]{		
+			]{
 				event_manager <- EventManager[0];
 				self.log <- myself.log;
 					
@@ -191,6 +193,8 @@ global {
 				studying_building <- select_building(studying_buildings);
 				commercial_building <- select_building(commercial_buildings);
 				leasure_building <- select_building(leasure_buildings);
+				
+				
 				
 	//			//vehicle
 				
@@ -298,12 +302,19 @@ global {
 	 	write "\nGraphs...";
 	 	float t1 <- machine_time;
 	 	list<Road> road_subset;
+	 	list<Road> cleaned_road;
 	 	map<Road, float> road_weights_map;
+	 	
+	 	cleaned_road <- clean_network(Road where (true),1.0,false,true);
+	 	//save missed_start format:shp to:'debug/missed_start.shp';
+	 	
+	 	
+	 	
 	 	
 	 	//feet 
 	 	road_subset <- Road where (each.max_speed < 60/3.6);
-	 	road_weights_map <- road_subset as_map (each:: (each.shape.perimeter));
-	 	feet_road_graph <- as_edge_graph(road_subset) with_weights road_weights_map;
+	 	road_weights_map <- road_subset as_map (each:: each.shape.perimeter);
+	 	feet_road_graph <-  (as_edge_graph(road_subset) with_weights road_weights_map);
 	 	feet_road_graph <- main_connected_component(feet_road_graph);
 	 	write "Pedestrians can use " + length(road_subset) + " road segments.";
 	 	
@@ -319,11 +330,17 @@ global {
 	 	write "Cyclists can use " + length(road_subset) + " road segments.";
 	 	
 	 	//car
-	 	road_subset <- Road where (each.car_track and each.importance <= road_importance);
-	 	road_weights_map <- road_subset as_map (each:: (each.shape.perimeter/each.max_speed));
+	 	road_subset <- cleaned_road where (each.car_track and each.importance <= road_importance);
+	 	//road_subset <- Road where (each.car_track and each.importance <= road_importance);
+	 	road_weights_map <- road_subset as_map (each:: (each.compute_time()));
 	 	car_road_graph <- as_edge_graph(road_subset) with_weights road_weights_map;
-	 	car_road_graph <- car_road_graph with_shortest_path_algorithm path_algorithm ;
+	 	//car_road_graph <- car_road_graph with_shortest_path_algorithm path_algorithm ;
 	 	car_road_graph <- directed(car_road_graph);
+	 	list<Road> list_road;
+	 	loop edge over: car_road_graph{
+	 		add edge to:list_road;
+	 	}
+	 	save list_road format:shp to:"debug/car_road_graph.shp" ;
 	 	
 	 	//estimate for info
 		int compo <- length(connected_components_of(car_road_graph));
@@ -438,9 +455,7 @@ global {
 		}
 		cycle_timer <- machine_time;
 		write "-> Current simulation date : " + current_date add_seconds(-step) + "\n";
-		loop i over:Road{
-	 			ask i {if self.topo_id ='TRONROUT0000000073493439 '{ write "current capacity : "+current_capacity/4+" over : "+max_capacity/4+"\ninflow : "+inflow+"\naccepted : "+accepted+"\noutflow : "+outflow; inflow<- 0;outflow<-0; accepted <- 0; }} 
-	 		}
+		
 	 		
 	 	if (EventManager[0].size = 0){
 	 		
@@ -461,6 +476,7 @@ global {
 		/*
 		 * A la fin de la simu : 
 		 */
+		
 	 	if (current_date>=starting_date+31#h){//Person count(each.day_done) = length(Person) { //and TransportTrip count(each.alive) = 0 {
 	 		write "\n-> The experiment took: " + (machine_time - experiment_init_time)/1000.0 + " seconds.\n" color:#green;
 	 		loop i over:Road{
@@ -475,7 +491,17 @@ global {
 	 			}
 	 			
 	 		}
-	 		save forcedRoad format:shp to:'forcedRoad.shp';
+	 		//save forcedRoad format:shp to:'forcedRoad.shp';
+	 		//write "missed point : "+missed_point;
+	 		//save missed_start format:shp to:'debug/missed_start.shp';
+	 		//save missed_dest format:shp to:'debug/missed_dest.shp';
+	 		save path_list format:shp to:'debug/path_list.shp';
+	 		//save missed_path_influence format:shp to:'debug/missed_path_influence.shp';
+	 		
+	 		loop r over:Road{
+	 			ask r{do log_end;}
+	 		}
+	 		
 	 		ask log {do log('end_of_simulation_logs');}
 	 		//ask log {do log('frequentation entre empalot et rangueil : '+day_frequentation_Empalot_Rangeuil);}
 	 		//LOGS

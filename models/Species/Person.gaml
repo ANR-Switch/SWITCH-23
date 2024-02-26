@@ -9,6 +9,8 @@
 
 model Person
 
+import "../Logs/Journal.gaml"
+
 import "../Logs/Logger.gaml"
 
 import "Vehicles/VehicleFactory.gaml"
@@ -36,7 +38,7 @@ import "../Utilities/Constants.gaml"
 
 
 
-species Person skills: [scheduling] schedules: [] {
+species Person skills: [scheduling,moving]schedules: [] {
 	string first_name; //already built in attribute
 	string genre;
 	int age;
@@ -49,7 +51,7 @@ species Person skills: [scheduling] schedules: [] {
 	//activities
 	list<int> activities;
 	list<date> starting_dates;
-	int act_idx <- -1; 
+	int act_idx ; 
 	point current_destination; 
 	
 	//buildings
@@ -65,7 +67,7 @@ species Person skills: [scheduling] schedules: [] {
 	
 	//
 	list<string> journal_str;
-	//Journal journal;
+	Journal journal;
 	bool day_done <- false; 
 	
 	float walking_speed <- 1.39 ; //#meter / #second ;
@@ -79,6 +81,11 @@ species Person skills: [scheduling] schedules: [] {
 	
 	Logger log;
 
+	init{
+
+	}
+	
+
 	
 	Building select_building (list<Building> l){
 		return one_of(l);
@@ -89,7 +96,7 @@ species Person skills: [scheduling] schedules: [] {
 	    	assert length(activities) = length(starting_dates);
 	    	date d;
 	    	//loop i from:0 to: length(activities)-1 {
-    		d <- starting_dates[0] add_minutes rnd(-floor(Constants[0].starting_time_randomiser/2), floor(Constants[0].starting_time_randomiser/2));
+    		d <- starting_dates[0] add_minutes floor(rnd(-(Constants[0].starting_time_randomiser/2), (Constants[0].starting_time_randomiser/2)));
 	  		msg_sent <- msg_sent+1;
 	  		do later the_action: "start_activity" at: d ;
 	    	//}	
@@ -100,7 +107,7 @@ species Person skills: [scheduling] schedules: [] {
     	write self.name + " didnt end his day";
     }
     
-    action start_activity {  	
+    action start_activity {	
     	assert !empty(vehicles) warning: true;
     	act_idx <- act_idx + 1;
     	if(verboseActivity){
@@ -171,20 +178,28 @@ species Person skills: [scheduling] schedules: [] {
     		ask log{do log (myself.get_current_date() + ": " + myself.name + " takes vehicle: " + myself.current_vehicle.name);} 
     	}
     	
+    	//location <- current_vehicle.location;
+    	//Road closest_road <- Road closest_to current_destination;
+    	//point tmp_destination <- location(closest_road.shape) ;
+    	
+    	//Road closest_road_start <- Road closest_to location;
+    	//point tmp_start <- location(closest_road_start.shape) ;
+    	//point tmp_destination <- current_destination;
     	is_moving_chart <- true;
     	//total_nb_paths <- total_nb_paths + 1; //TEST, to remove later
     	ask current_vehicle{
     		if species(myself.current_vehicle) != PublicTransportCard {
     			do add_passenger(myself);	
     		}
-			do goto(myself.current_destination);
+			do go_to(location,myself.current_destination);
 		}
     }
     
     action end_motion {
-//    	location <- current_destination;
+    	//location <- point(Road closest_to current_destination);
+		do goto target: current_destination;
     	current_building <- next_building;
-    	color <- current_building.color;
+    	//color <- current_building.color;
     	is_moving_chart <- false;
     	  
     	if species(current_vehicle) != PublicTransportCard {  	
@@ -195,7 +210,7 @@ species Person skills: [scheduling] schedules: [] {
 
     	
     	//register next activity
-    	if act_idx + 1 = length(activities) {
+    	if act_idx + 1 >= length(activities) {
 			//daydone
 			if(countDayEnded){
 				dayEnded <- dayEnded+1;
@@ -204,59 +219,57 @@ species Person skills: [scheduling] schedules: [] {
 				ask log{do log(myself.get_current_date() + ": " + myself.name + " ended its day correctly.");} 
 			}
 			day_done <- true;
-		}else if act_idx + 1 < length(activities){
-				date d <- starting_dates[act_idx+1] add_minutes rnd(-floor(Constants[0].starting_time_randomiser/2), floor(Constants[0].starting_time_randomiser/2));
+		}else {
+			date d <- starting_dates[act_idx+1] add_minutes rnd(-floor(Constants[0].starting_time_randomiser/2), floor(Constants[0].starting_time_randomiser/2));
 			if get_current_date() < d {
-				msg_sent <- msg_sent+1;
     	  		do later the_action: "start_activity" at: d ;
 			}else{
-				msg_sent <- msg_sent+1;
 				do later the_action: "start_activity" at: get_current_date() add_seconds 1;
 			}
 		}  	
     }
     
-    action walk_to(point p) {
-    	msg_receive <- msg_receive+1;
-    	/*
-    	 * Je soupconne cette fonction de ralentir la simulation, 
-    	 * je ne l'utilise pas pour l'instant
-    	 */
-    	//write "test, fct walk to is being called";
-    	color <- #darkgoldenrod;
-    	float d <- distance_to(location, p) #meter ;
-    	
-    	if d > walking_speed {
-    		//move
-    		//set vehicle to feet
-    		float angle <- atan2(p.y - location.y, p.x - location.x);
-    		location <- point(location.x + walking_speed * cos(angle), location.y + walking_speed * sin(angle));
-    		
-    		msg_sent <- msg_sent+1;
-    		do later the_action: "walk_to" with_arguments: map("p"::p) at:get_current_date() add_seconds 1;
-    	}else{
-    		//motion over
-    		bool found <- false;
-    		location <- p;
-    		
-    		/*
-    		 * here we have to find out what action we were supposed to perform
-    		 * we do it by checking what was our destination in the first place
-    		 * only two cases should appear : 
-    		 * either we joined our current_vehicle
-    		 * either we walked to our activity location
-    		 */
-    		if location = current_destination {
-    			found <- true;
-    			do end_motion;
-    		}else if location = current_vehicle.location {
-				found <- true;
-				do start_motion;
-			}else{
-				write get_current_date() + ": Something is wrong with the fct walk_to() of: " + name color:#red;  			
-    		}
-    	} 	 	
-    }
+//     action walk_to(point p) {
+//    	//msg_receive <- msg_receive+1;
+//    	/*
+//    	 * Je soupconne cette fonction de ralentir la simulation, 
+//    	 * je ne l'utilise pas pour l'instant
+//    	 */
+//    	//write "test, fct walk to is being called";
+//    	color <- #darkgoldenrod;
+//    	float d <- distance_to(location, p) #meter ;
+//    	
+//    	if d > walking_speed {
+//    		//move
+//    		//set vehicle to feet
+//    		float angle <- atan2(p.y - location.y, p.x - location.x);
+//    		location <- point(location.x + walking_speed * cos(angle), location.y + walking_speed * sin(angle));
+//    		
+//    		msg_sent <- msg_sent+1;
+//    		do later the_action: "walk_to" with_arguments: map("p"::p) at:get_current_date() add_seconds 1;
+//    	}else{
+//    		//motion over
+//    		bool found <- false;
+//    		location <- p;
+//    		
+//    		/*
+//    		 * here we have to find out what action we were supposed to perform
+//    		 * we do it by checking what was our destination in the first place
+//    		 * only two cases should appear : 
+//    		 * either we joined our current_vehicle
+//    		 * either we walked to our activity location
+//    		 */
+//    		if location = current_destination {
+//    			found <- true;
+//    			do end_motion;
+//    		}else if location = current_vehicle.location {
+//				found <- true;
+//				do start_motion;
+//			}else{
+//				write get_current_date() + ": Something is wrong with the fct walk_to() of: " + name color:#red;  			
+//    		}
+//    	} 	 	
+//    }
     
     action choose_current_vehicle {
     	/*
@@ -293,7 +306,7 @@ species Person skills: [scheduling] schedules: [] {
 	    			}
 	    			match Feet {
 	    				ask v {
-	    					planned_path <- compute_path_between(v.location, myself.current_destination);
+	    					planned_path <- path_between(my_graph,v.location, myself.current_destination);
 	    				}
 	    				if planned_path != nil {
 	    					float t;
@@ -324,6 +337,8 @@ species Person skills: [scheduling] schedules: [] {
     	ask factory{
     		myself.current_vehicle <-  create_vehicles(weights,myself,myself.log);
     	}
+    	current_vehicle.location <-  any_location_in(Road closest_to location);
+    	//add current_vehicle.location to:missed_start;
     	//this method is called at initialisation in order to select the persons' vehicles
     	
     }

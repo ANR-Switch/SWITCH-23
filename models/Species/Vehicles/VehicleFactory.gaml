@@ -8,6 +8,8 @@
 
 model VehicleFactory
 
+import "residualVehicle.gaml"
+
 import "Vehicle.gaml"
 
 import "Bike.gaml"
@@ -53,6 +55,11 @@ species VehicleFactory{
     		return v;
     	}
     	
+    }
+    
+    Vehicle create_residual_vehicles(point l){
+    	create ResidualVehicle with:[location::l];
+    	return ResidualVehicle[length(ResidualVehicle)-1];
     }
 
 	

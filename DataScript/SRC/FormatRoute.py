@@ -49,3 +49,10 @@ def format_route_direct(route):
     route = route[['ID','NATURE','IMPORTANCE','NB_VOIES','SENS','VIT_MOY_VL','LARGEUR','VEHICULES','geometry']]
     return route
 
+
+df = gpd.read_file("C:/Users/flavi/Travail/Switch-23/DataScript/IN/roads.shp")#'/home/flavien/Documents/Alternance/data/Carte/OSMToulouse/formatedData/routeMetropoleToulouse.shp'
+#road = format_route_direct(df)
+
+df = df.loc[df['IMPORTANCE'] == '1']
+df.to_file("C:/Users/flavi/Travail/Switch-23/DataScript/OUT/roads1.shp")
+#df.loc[df['column_name'] == some_value]

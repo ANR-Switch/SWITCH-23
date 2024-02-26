@@ -25,8 +25,8 @@ species Constants {
 	bool log_traffic <- false const:true;
 	
 	////Vehicles.gaml
-	float car_size <- 4.0 * simulation_reduction_factor const:true;
-	float bus_size <- 11.0 const:true;
+	float car_size <- 4.0#m * simulation_reduction_factor const:true;
+	float bus_size <- 11.0#m const:true;
 	
 	////PublicTransportCard.gaml
 	/*
@@ -35,12 +35,12 @@ species Constants {
 	int waiting_time_before_recomputing <- 20 const: true;
 	
 	////Person.gaml
-	int starting_time_randomiser <- 120 const: true; //minutes
+	int starting_time_randomiser <- 5 const: true; //minutes
 	//float lateness_tolerance <- 300.0 const: true; //seconds
 	//float ratio_exterior_workers <- 0.85 const: true; //[0;1] //les gens qui sortent de la zone smulée pour aller travailler à l'exterieure
 	
 	////Road.gaml
-	bool double_the_roads <- true const:true; //true if the database does not pre-double the roads for both direction, in this case we do it at initial time
+	bool double_the_roads <- false const:true; //true if the database does not pre-double the roads for both direction, in this case we do it at initial time
 	float minimum_road_capacity_required <- car_size const:true; //size of a car or a bus
 	
 	float speed_factor <- 1.0 const:true;
@@ -54,7 +54,7 @@ species Constants {
 	float beta <- 4.0 const:true;   //4.0
 	
 	/* temps avant qu'une voiture s'insere de force sur la route, pour défaire les deadlocks */
-	int deadlock_patience <- 120 const:true; //seconde
+	int deadlock_patience <- 30 const:true; //seconde
 	
 	////TransportGraph.gaml
 	/*

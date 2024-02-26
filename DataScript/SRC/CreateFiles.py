@@ -130,4 +130,12 @@ else:
     print('formating agglo road map')
     fr.format_road(src_road_agglo,dst_road)
 
+
+if (not os.path.exists(dst_road_main_component)):
+    print('creating main conected component og the graph road')
+    road = gpd.read_file(dst_road)
+    road = Cs.largest_connected_component(road)
+    road.to_file(dst_road_main_component)
+else:
+    print('bati dont change')
 """

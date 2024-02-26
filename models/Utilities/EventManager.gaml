@@ -14,9 +14,9 @@ model EventManager
 species EventManager control: event_manager {
 
 	
-		
+	/* 	
 	reflex write_size {
-		write "[" + name + "] manager size = " + size + " at " + current_date;
-	}
+		//write "[" + name + "] manager size = " + size + " at " + current_date;
+	}*/
 
 }

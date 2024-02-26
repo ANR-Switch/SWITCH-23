@@ -1,7 +1,7 @@
 /**
 * Name: consolLog
 * Based on the internal empty template. 
-* Author: flavi
+* Author: flavien
 * Tags: 
 */
 
@@ -31,6 +31,7 @@ species ConsolLog parent:Logger{
 		 	if countTrajet{
 		 		write ""+nb_trajet+" trajet on été effectué durant la simulation" color:#yellow;
 		 	}
+		 	
 		}
 		else{
 			write mess;

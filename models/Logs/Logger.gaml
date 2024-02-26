@@ -16,29 +16,52 @@ global{
 	bool verbosePathNotFound <- false;
 	bool verboseRoadForcing <- false;
 	bool countForcing <- false;
-	bool countPath <- false;
+	bool countPath <- true;
 	bool countDayEnded <- true;
 	bool verboseTravel <- false;
 	bool latenesslogged <- false;
 	bool countTrajet <-true;
 	
 	int dayEnded;
-	int pathNotFound;
+	int pathNotFound <- 0;
 	int forcing;
 	int nb_trajet;
+	int end_motion_in_destination <- 0;
+	int end_motion_in_goto <- 0;
 	
 	int msg_sent;
 	int msg_receive;
 	int msg_accept;
+	
+	list<geometry> missed_start;
+	list<point> missed_dest;
+	list<geometry> missed_path_influence;
+	list<Road> forcedRoad;
+	list<geometry> path_list;
+	
+	//bool clean <- false;
+	
 }
 
 species Logger{
-		action log(string mess) ;
+	
+	map<string,list> log_files;
+	action log(string mess) ;
+	//save header to: journals_pt_file format:"csv" rewrite:true header:false;
+	action log_in_file(string file_name,list headers, list datas){
+		if !file_exists("logs_file/"+file_name){
+			save headers format:'csv' to:"logs_file/"+file_name header:false;
+		}
+		save datas format:'csv' to:"logs_file/"+file_name rewrite:false;
+		
+		
+	}
 }
 
-
-
-
+experiment "logg" type:gui{
+	bool clean <- true;
+	
+}
 
 
 /* observer 

@@ -13,6 +13,7 @@ species Building schedules: [] {
 	rgb color;
 	string real_name;
 	string db_id;
+	string string_type;
 
 	aspect default {
 		draw shape color: color border: #black;			

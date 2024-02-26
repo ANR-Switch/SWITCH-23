@@ -11,6 +11,8 @@ from shapely.geometry import Point
 
 import FormatRoute as fr
 import formatageBati as fb
+import networkx as nx
+
 
 
 def normalise_bati_topo (df):
