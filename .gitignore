@@ -2,3 +2,7 @@ output/*
 includes/*
 DataScript/IN/*
 DataScript/OUT/*
+AimSun_Data/*
+models/logs_file/*
+DataScript/Comapre_Aimsun_switch/*
+models/logs_file/lateness.csv
