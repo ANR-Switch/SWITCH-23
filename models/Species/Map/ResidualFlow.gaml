@@ -35,6 +35,7 @@ species ResidualFlow skills: [scheduling] schedules: [] {
 	list<float> matrice_duration <- [6#h,3#h,7#h,3#h,5#h];
 	int current_matrice <- 0;
 	float time_since_previous_matrice <- 0.0;
+	int count_residual_vehicle;
 	
 	VehicleFactory factory;
 	//EventManager event_manager;
@@ -46,6 +47,7 @@ species ResidualFlow skills: [scheduling] schedules: [] {
 	init{
 		create VehicleFactory;
 		factory <- VehicleFactory[0];
+		
 	}
 	action init_OD{
 		list<float> tmp_list;
@@ -77,6 +79,7 @@ species ResidualFlow skills: [scheduling] schedules: [] {
     }*/
     
     action init_flow{
+    	
     	date sent_date;
     	loop matrice over:frequency_tab{
     		loop flow over:matrice{
@@ -96,7 +99,9 @@ species ResidualFlow skills: [scheduling] schedules: [] {
 	
 	//do later the_action: "deadlock_prevention" with_arguments: map("vehicle"::vehicle) at: t;
 	action create_flow {//when:is_in{
+	
 		if is_in{
+			
 			int i <- 0;
 			date sent_date <- current_date;
 			
@@ -105,12 +110,12 @@ species ResidualFlow skills: [scheduling] schedules: [] {
 				if flow > 0{
 					if flow<1{
 						if(flip(flow)){
-							do later the_action:'send_vehicule' with_arguments:map("destination"::i) at:sent_date+rnd(0,step);
+							do later the_action:'send_vehicule' with_arguments:map("destination"::destination_list[i]) at:sent_date+rnd(0,step);
 						}
 					}
 					else{
 						loop times:flow{
-							do later the_action:'send_vehicule' with_arguments:map("destination"::i) at:sent_date+rnd(0,step);
+							do later the_action:'send_vehicule' with_arguments:map("destination"::destination_list[i]) at:sent_date+rnd(0,step);
 						}
 					}
 				}
@@ -127,14 +132,20 @@ species ResidualFlow skills: [scheduling] schedules: [] {
 	
 	}
 	
-	action send_vehicule(int destination){
+	action send_vehicule(ResidualFlow destination){
+		//write ''+self.id+" create flow to : "+destination.id;
 		//write "send_vehicule date : " + get_current_date();
-		Vehicle new_vehicle;
-		new_vehicle <- factory.create_residual_vehicles(location);
+		ResidualVehicle	new_vehicle <- ResidualVehicle(factory.create_residual_vehicles(location));
 		ask new_vehicle{
+			start_autoroute <- myself;
+			dest_autoroute <- destination;
+			//location <- myself.location; 
+			
+			self.id <- myself.id*100000+myself.count_residual_vehicle;
 			log <- myself.log;
 			event_manager <- myself.event_manager;
-			do go_to(myself.location,any_location_in(myself.destination_list[destination]));
+			do go_to(start_autoroute.location,dest_autoroute.location);
 		}
+		count_residual_vehicle <- count_residual_vehicle+1;
 	}
 }

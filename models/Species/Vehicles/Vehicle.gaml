@@ -245,14 +245,23 @@ species Vehicle virtual: true skills: [scheduling] schedules: [] {
 		date leave_date <- get_current_date();
 		float distance <- current_road.shape.perimeter;
 		float mean_speed <- distance / (leave_date - log_entry_date);
+		float time_on_road <- (leave_date - log_entry_date);
 		mean_speed <- (mean_speed * 3.6) with_precision 1;
-		ask owner.journal {
-			do write_in_journal(myself.owner.act_idx, myself, myself.current_road.name, myself.current_road.topo_id, round(distance), myself.log_entry_date, leave_date, mean_speed, _lateness);
-		}
-		ask log{
-			//do log(string(myself.owner.act_idx)+","+myself.name+","+myself.current_road.name+","+myself.current_road.topo_id+","+round(distance)+","+myself.log_entry_date+","+string(leave_date)+","+round(mean_speed)+","+_lateness);
+		
+		//if (name mod 10 = 0){
+			ask log{
+			//write "logging";
+			do log_in_file(
+				'lateness.csv'	
+				,['ID',"TopoId","distance","entry date",'duration',"mean speed","lateness"]
+				,[		
+						myself.name,myself.current_road.topo_id,round(distance),
+						string(myself.log_entry_date),time_on_road,round(mean_speed),_lateness
+				]
+			);
 			
-		}
+			}
+		//}
 		//add string(owner.act_idx)+","+self.name+","+self.current_road.name+","+self.current_road.topo_id+","+round(distance)+","+self.log_entry_date+","+string(leave_date)+","+round(mean_speed)+","+_lateness to: owner.journal_str;
 	}
 }

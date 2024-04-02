@@ -49,6 +49,8 @@ species Road skills: [scheduling] schedules: [] {
 	list<Vehicle> waiting_list;
 	
 	
+	int comptage;
+	int lateness;
 	
 	
 	//Graph :
@@ -581,6 +583,14 @@ species Road skills: [scheduling] schedules: [] {
 		if blocked > 0 {
 			ask log {do log(myself.topo_id+" get blocked : "+myself.blocked +" block - unblock : "+myself.ratio_blocked);}
 		}
+	}
+	
+	action log_event{
+		
+	}
+	
+	action write_log{
+		
 	}
 
 	aspect default {

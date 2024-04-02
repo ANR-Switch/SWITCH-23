@@ -32,12 +32,12 @@ global skills: [scheduling] schedules: []{
 	
  
 
-	//shape_file shape_buildings <- shape_file(dataset_path + "buildings.shp");
-	shape_file shape_buildings <- shape_file("../includes/tests/roadImportance1/INOUT.shp");
-	
+	//shape_file shape_buildings <- shape_file(dataset_path + "buildings.shp");	
+	shape_file shape_buildings <- shape_file("../includes/tests/INOUT.shp");
+
 
 	//shape_file shape_roads_CT <- shape_file("../includes/tests/connected_comp/roads.shp")
-	shape_file shape_roads_CT <- shape_file("../includes/tests/RoadImportance1NC/roads.shp");
+	shape_file shape_roads_CT <- shape_file("../includes/tests/RoadImportance2/roads.shp");
 
 
 	csv_file Matrices_OD <- csv_file("../includes/tests/RoadImportance1NC/Matrices_OD.csv",true);
@@ -111,7 +111,7 @@ global skills: [scheduling] schedules: []{
 	/*Consol*/Logger log;
 	Logger csvlog;
 	
-
+	
 	
 	init {
 		nb_trajet <- 0;
@@ -179,10 +179,10 @@ global skills: [scheduling] schedules: []{
 	
 	
 	action init_residual_flow(Logger l, Logger l2) {
-		create ResidualFlow from: Matrices_OD with: [
+		create ResidualFlow from: shape_buildings with: [
 			id::int(read('id')),
-			is_in::read('is_in')='1',
-			coresponding_highway::read("corresponding_highway"),
+			is_in::read('Type')='IN',
+			coresponding_highway::read("correspond"),
 			matrice_OD_daily::list<int>(read("OD_daily") split_with ";"),
 			log::l,
 			csvlog::l2,
@@ -209,7 +209,7 @@ global skills: [scheduling] schedules: []{
 					
 					
 				}
-				
+				write("matrice_od : "+matrice_OD);
 			}
 			
 		}

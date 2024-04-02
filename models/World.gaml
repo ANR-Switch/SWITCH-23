@@ -33,7 +33,7 @@ global {
 	
 	
 	
-	shape_file shape_roads_CT <- shape_file("../includes/tests/roadImportance1/roads.shp");
+	shape_file shape_roads_CT <- shape_file("../includes/tests/roadImportance3/roads.shp");
 	//shape_file shape_roads_CT <- shape_file("../includes/tests/connected_comp/roads.shp");
 
 
@@ -44,7 +44,7 @@ global {
 	
 	string gtfs_file <- dataset_path + "gtfs/";
 	csv_file population <- csv_file("../includes/population/population.csv", ",", true);
-	int nbBoucle <- 1;
+	int nbBoucle <- 10;
 	
 	//SIM	
 	float step <- 3600 #seconds parameter: "Step"; //86400 for a day, 3600 for an hour
@@ -502,7 +502,8 @@ global {
 	 			ask r{do log_end;}
 	 		}
 	 		
-	 		ask log {do log('end_of_simulation_logs');}
+	 		ask log {do write_log();}
+	 		write "\n-> log written in : " + (machine_time - experiment_init_time)/1000.0 + " seconds.\n" color:#green;
 	 		//ask log {do log('frequentation entre empalot et rangueil : '+day_frequentation_Empalot_Rangeuil);}
 	 		//LOGS
 	 		/*if !empty(Logger) {

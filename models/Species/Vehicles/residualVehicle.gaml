@@ -8,6 +8,8 @@
 
 model ResidualVehicle
 
+import "../Map/ResidualFlow.gaml"
+
 //import "../../Logs/Logger.gaml"
 
 import "../Map/RoadsGraph.gaml"
@@ -32,6 +34,9 @@ species ResidualVehicle parent: Car skills: [scheduling] schedules: [] {
 	graph my_graph;
 	graph graph_pound;
 	Logger log;
+	int id;
+	ResidualFlow start_autoroute;
+	ResidualFlow dest_autoroute;
 
 	//
 		
@@ -51,12 +56,11 @@ species ResidualVehicle parent: Car skills: [scheduling] schedules: [] {
 
 			current_road <- nil;
 			float t1 <- machine_time;
-			
-			
 
 			my_path <- path_between(my_graph, start, dest);
 			if my_path = nil {
 				if pathNotFound < 1{
+					write ("path not found !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 					add location to:missed_start;
 					add dest to:missed_start;
 				}
@@ -91,9 +95,9 @@ species ResidualVehicle parent: Car skills: [scheduling] schedules: [] {
 				t <- get_theoretical_travel_time(myself);
 			}
 			int road_lateness <- int((get_current_date() - log_entry_date) - t);
-			if latenesslogged{
-				do log_lateness(road_lateness);
-			}
+	
+			do log_lateness(road_lateness);
+
 			
 		}
 		log_entry_date <- get_current_date();
@@ -127,25 +131,17 @@ species ResidualVehicle parent: Car skills: [scheduling] schedules: [] {
 	}
 	
 	
-	action log_lateness (int _lateness){
+	/*action log_lateness (int _lateness){
 		date leave_date <- get_current_date();
 		float distance <- current_road.shape.perimeter;
 		float mean_speed <- distance / (leave_date - log_entry_date);
+		float time_on_road <- (leave_date - log_entry_date);
 		mean_speed <- (mean_speed * 3.6) with_precision 1;
 
 		//write self.current_road.name;
-		ask log{
-			//write "logging";
-			do log_in_file(
-				'lateness.csv'	
-				,['name','road name',"road's topo id","distance","entry date","leave date","mean speed","lateness"]
-				,[myself,myself.current_road.name,myself.current_road.topo_id
-						,round(distance),myself.log_entry_date,string(leave_date),round(mean_speed),_lateness
-				]
-			);
-			
-		}
+		
+		
 		//add string(owner.act_idx)+","+self.name+","+self.current_road.name+","+self.current_road.topo_id+","+round(distance)+","+self.log_entry_date+","+string(leave_date)+","+round(mean_speed)+","+_lateness to: owner.journal_str;
-	}
+	}*/
 }
 
