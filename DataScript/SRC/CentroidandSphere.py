@@ -40,10 +40,11 @@ def normalise_bati_osm (df):
 
 
 def intersectCercle(carte, communes, communeAEtudier, rayon):
+    communes = gpd.read_file(communes)
     toulouse = communes.loc[communes['INSEE_COM'] == communeAEtudier]
     center = toulouse.centroid
     center_point = Point(center.x, center.y)
-    circle = center_point.buffer(diametre)
+    circle = center_point.buffer(rayon)
     crs = communes.crs
 
 

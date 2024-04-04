@@ -221,10 +221,10 @@ species Person skills: [scheduling,moving]schedules: [] {
 			day_done <- true;
 		}else {
 			date d <- starting_dates[act_idx+1] add_minutes rnd(-floor(Constants[0].starting_time_randomiser/2), floor(Constants[0].starting_time_randomiser/2));
-			if get_current_date() < d {
+			if self.get_current_date() < d {
     	  		do later the_action: "start_activity" at: d ;
 			}else{
-				do later the_action: "start_activity" at: get_current_date() add_seconds 1;
+				do later the_action: "start_activity" at: self.get_current_date() add_seconds 1;
 			}
 		}  	
     }

@@ -44,7 +44,7 @@ global {
 	
 	string gtfs_file <- dataset_path + "gtfs/";
 	csv_file population <- csv_file("../includes/population/population.csv", ",", true);
-	int nbBoucle <- 10;
+	int nbBoucle <- 5;
 	
 	//SIM	
 	float step <- 3600 #seconds parameter: "Step"; //86400 for a day, 3600 for an hour
