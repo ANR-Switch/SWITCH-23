@@ -97,7 +97,6 @@ species Person skills: [scheduling,moving]schedules: [] {
 	    	date d;
 	    	//loop i from:0 to: length(activities)-1 {
     		d <- starting_dates[0] add_minutes floor(rnd(-(Constants[0].starting_time_randomiser/2), (Constants[0].starting_time_randomiser/2)));
-	  		msg_sent <- msg_sent+1;
 	  		do later the_action: "start_activity" at: d ;
 	    	//}	
 	    }
@@ -107,14 +106,14 @@ species Person skills: [scheduling,moving]schedules: [] {
     	write self.name + " didnt end his day";
     }
     
-    action start_activity {	
+    action start_activity {
     	assert !empty(vehicles) warning: true;
     	act_idx <- act_idx + 1;
     	if(verboseActivity){
     		ask log{do log(myself.get_current_date() + ": " + myself.name + " starts activity" + myself.act_idx );} 
     	}
-    	
-		switch int(activities[act_idx]){
+    	if (act_idx<length(activities)){
+    		switch int(activities[act_idx]){
 			match 0 {
 				current_destination <- any_location_in(living_building);
 				next_building <- living_building;
@@ -149,27 +148,46 @@ species Person skills: [scheduling,moving]schedules: [] {
 				current_destination <- any_location_in(studying_building);
 				next_building <- studying_building;
 			}
+			match 7 {
+				current_destination <- any_location_in(studying_building); //Déposer une personne à un mode de transport (personne présente)
+				next_building <- studying_building;
+			}
+			match 8 {
+				current_destination <- any_location_in(working_building);
+				next_building <- studying_building;
+			}
+			match 9 {
+				current_destination <- any_location_in(living_building);
+				next_building <- studying_building;
+			}
 			default {
+				write "Weird Act : "+(activities[act_idx]) color:#red;
+				current_destination <- any_location_in(living_building);
+				next_building <- living_building;
 				/*if(verboseActivity){
 					write "Weird activity !" color: #red;
 				}*/
 			}
 		}
     	
-		if location != current_destination {
-			do choose_current_vehicle;
-	
-//			if species(current_vehicle) = Car { //TRYING without walk_to
-//				do walk_to(current_vehicle.location);
-//			}else{
-				do start_motion;	
-//			}
-		}else{
-			/*if(verboseActivity){
-				write name + " is already at its destination. It will do its activity directly.";
-			}*/
-			do end_motion;
+		
+    	
+			if location != current_destination {
+				do choose_current_vehicle;
+		
+		//			if species(current_vehicle) = Car { //TRYING without walk_to
+		//				do walk_to(current_vehicle.location);
+		//			}else{
+					do start_motion;	
+		//			}
+			}else{
+				/*if(verboseActivity){
+					write name + " is already at its destination. It will do its activity directly.";
+				}*/
+				do end_motion;
+			}
 		}
+		
     }
         
     

@@ -96,7 +96,10 @@ species Road skills: [scheduling] schedules: [] {
 		}
 		
 		displayed_shape <- (shape + lanes) translated_by (trans * 2);
-
+		
+		/*if (importance=1){
+			max_speed <- max_speed-10;
+		}*/
 		
 		/*//some security checks
 		if max_speed = nil {

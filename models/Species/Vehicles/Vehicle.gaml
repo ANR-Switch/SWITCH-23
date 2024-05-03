@@ -253,10 +253,11 @@ species Vehicle virtual: true skills: [scheduling] schedules: [] {
 			//write "logging";
 			do log_in_file(
 				'lateness.csv'	
-				,['ID',"TopoId","distance","entry date",'duration',"mean speed","lateness"]
+				,['ID',"TopoId","distance","entry date",'duration',"mean speed","lateness","activity"]
 				,[		
 						myself.name,myself.current_road.topo_id,round(distance),
-						string(myself.log_entry_date),time_on_road,round(mean_speed),_lateness
+						string(myself.log_entry_date),time_on_road,round(mean_speed),_lateness,
+						myself.owner.activities[myself.owner.act_idx]
 				]
 			);
 			

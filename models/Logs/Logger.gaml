@@ -45,7 +45,7 @@ global{
 }
 
 species Logger{
-	
+
 	list<csv_file> files_list;
 	
 	list<LogFile> log_files;
@@ -73,41 +73,25 @@ species Logger{
 			write "create "+ name_of_file;
 			create LogFile returns:new_file with:[name::name_of_file,header::headers,data::[datas]] {}
 			add new_file[0] to:log_files;
-		}
-		//write "log_in_file ("+ file_name;
-		//if !file_exists("logs_file/"+name_of_file){
-			//self.file_name <- name_of_file;
-			//write "create "+ name_of_file;
-			//save headers format:'csv' to:"logs_file/"+name_of_file header:false;
-		
-//		loop i from: 0 to:length(headers)-1{
-//			add datas[i] to:log_files;
-//		}
-		//save datas format:'csv' to:"logs_file/"+file_name rewrite:false;
-		
-		
+		}	
 	}
 	
 	action write_log{
 		write "writing log";
 		write log_files;
 		loop file_list over:log_files{
-			save file_list.header format:'csv' to:"logs_file/"+file_list.name header:true rewrite:true;
-			save file_list.data format:'csv' to:"logs_file/"+file_list.name rewrite:false;
-			/*loop f over:file_list.data{
-				save f format:'csv' to:"logs_file/"+file_list.name;
-			}*/
-			/*save f.header format:'csv' to:"logs_file/"+f.name;
-			loop l over:f.data{
-				write f.data;
-				save l format:'csv' to:"logs_file/"+f.name;
-			}*/
+			if !file_exists("logs_file/"+file_list.name){
+				save file_list.header format:'csv' to:"logs_file/"+file_list.name header:true;
+			}
+				write(file_list.name);
+				save file_list.data format:'csv' to:"logs_file/"+file_list.name rewrite:false;
+				file_list.data <- [];
+			
 		}
 		//save log_files format:'csv' to:"logs_file/"+file_name rewrite:true;
 	}
 	
 }
-
 
 
 

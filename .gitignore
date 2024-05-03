@@ -6,3 +6,9 @@ AimSun_Data/*
 models/logs_file/*
 DataScript/Comapre_Aimsun_switch/*
 models/logs_file/lateness.csv
+/DataScript
+/models/logs_file
+models/logs_file/meanMap.csv
+/models/debug
+/models/debug
+models/debug/path_list.shx

@@ -54,7 +54,6 @@ def one_of(l):
 
 def set_activities(r):
     r['activities'], r['depart'] = one_of(pop_model.loc[r['profile']])
-
     return r
 
 

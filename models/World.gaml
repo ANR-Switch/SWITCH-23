@@ -27,15 +27,17 @@ global {
 	string dataset_path <- "../includes/agglo/";
 	
  
+	//shape_file roads0_shape_file <- shape_file("../includes/roads/basicScenario/roadImportance3/roads.shp");
 
-	shape_file shape_buildings <- shape_file(dataset_path + "buildings.shp");
+
+	shape_file shape_buildings <- shape_file(dataset_path + "bati.shp");
 	//shape_file shape_buildings <- shape_file("../includes/tests/roadImportance1/INOUT.shp");
 	
 	
 	
-	shape_file shape_roads_CT <- shape_file("../includes/tests/roadImportance3/roads.shp");
+	shape_file shape_roads_CT <- shape_file("../includes/roads/basicScenario/roadImportance3/roads.shp");
 	//shape_file shape_roads_CT <- shape_file("../includes/tests/connected_comp/roads.shp");
-
+	//"C:\Users\flavi\Travail\Switch-23\includes\roads\speedLimitScenario\road3decrease1with30\road3decrease1with30.cpg"
 
 	
 	
@@ -43,8 +45,8 @@ global {
 	geometry shape <- envelope(shape_roads_CT);
 	
 	string gtfs_file <- dataset_path + "gtfs/";
-	csv_file population <- csv_file("../includes/population/population.csv", ",", true);
-	int nbBoucle <- 5;
+	csv_file population <- csv_file("../includes/population/Pop2over3.csv", ";", true);
+	int nbBoucle <- 1;
 	
 	//SIM	
 	float step <- 3600 #seconds parameter: "Step"; //86400 for a day, 3600 for an hour
@@ -177,13 +179,12 @@ global {
 				professional_activity::int(read("activite_pro")),
 				income::int(read("revenu")),
 				study_level::int(read("etudes"))*/
-				activities::init_read_activities(read("activities")),
-				starting_dates::init_read_dates(string(read("depart")))
+				activities::init_read_activities(string(read("activities"))),//init_read_activities(read("activities"))
+				starting_dates::init_read_dates(string(read("departs")))//init_read_dates(string(read("depart")))
 			]{
 				event_manager <- EventManager[0];
 				self.log <- myself.log;
 					
-				
 	//			//buildings
 				living_building <- select_building(living_buildings);
 				location <- any_location_in(living_building);
@@ -199,7 +200,6 @@ global {
 	//			//vehicle
 				
 				do choose_vehicles(weights,factory);
-				
 	//			//activities
 				do register_activities; //after link to eventmanager
 			}			
@@ -414,9 +414,10 @@ global {
 
 	list<int> init_read_activities(string s) {
 		list<int> r_list;
-		int act;
+		s <- (replace(s,'[',''));
+		s <- (replace(s,']',''));
 		
-		loop e over: split_with(s, ";") {
+		loop e over: split_with(s, ",") {
 			add int(e) div 10 to: r_list;
 		}
     	 return r_list;
@@ -424,7 +425,9 @@ global {
     
     list<date> init_read_dates(string s) {
 		list<date> r_list;
-    	list<string> l1 <- split_with(replace(s, "'", ""), ";");
+		s <- (replace(s,'[',''));
+		s <- (replace(s,']',''));
+    	list<string> l1 <- split_with(replace(s, "'", ""), ",");
     	list<string> l2;
     	
     	loop e over: l1 {
@@ -448,6 +451,9 @@ global {
 			experiment_init_time <- machine_time;
 		}
 		
+
+		
+		
 		write "\n-> The cycle took " + (machine_time-cycle_timer)/1000 + " seconds to simulate " + step + " seconds.";
 		if(machine_time-cycle_timer != 0)
 		{
@@ -456,6 +462,8 @@ global {
 		cycle_timer <- machine_time;
 		write "-> Current simulation date : " + current_date add_seconds(-step) + "\n";
 		
+		ask log {do write_log();}
+		write "\n-> log written in : " + (machine_time - experiment_init_time)/1000.0 + " seconds.\n" color:#green;
 	 		
 	 	if (EventManager[0].size = 0){
 	 		
@@ -502,7 +510,7 @@ global {
 	 			ask r{do log_end;}
 	 		}
 	 		
-	 		ask log {do write_log();}
+	 		
 	 		write "\n-> log written in : " + (machine_time - experiment_init_time)/1000.0 + " seconds.\n" color:#green;
 	 		//ask log {do log('frequentation entre empalot et rangueil : '+day_frequentation_Empalot_Rangeuil);}
 	 		//LOGS
