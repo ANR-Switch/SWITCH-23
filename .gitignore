@@ -12,3 +12,4 @@ models/logs_file/meanMap.csv
 /models/debug
 /models/debug
 models/debug/path_list.shx
+*.zip
