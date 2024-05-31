@@ -31,12 +31,10 @@ global {
 
 
 	shape_file shape_buildings <- shape_file(dataset_path + "bati.shp");
-	//shape_file shape_buildings <- shape_file("../includes/tests/roadImportance1/INOUT.shp");
 	
 	
 	
-	shape_file shape_roads_CT <- shape_file("../includes/roads/basicScenario/roadImportance3/roads.shp");
-	//shape_file shape_roads_CT <- shape_file("../includes/tests/connected_comp/roads.shp");
+	shape_file shape_roads_CT <- shape_file("../includes/roads/speedLimitScenario/road3set1to110&3to50/roads.shp");
 	//"C:\Users\flavi\Travail\Switch-23\includes\roads\speedLimitScenario\road3decrease1with30\road3decrease1with30.cpg"
 
 	
@@ -45,11 +43,11 @@ global {
 	geometry shape <- envelope(shape_roads_CT);
 	
 	string gtfs_file <- dataset_path + "gtfs/";
-	csv_file population <- csv_file("../includes/population/Pop2over3.csv", ";", true);
-	int nbBoucle <- 1;
+	csv_file population <- csv_file("../includes/population/Pop.csv", ";", true);
+	int nbBoucle <- 10;
 	
 	//SIM	
-	float step <- 3600 #seconds parameter: "Step"; //86400 for a day, 3600 for an hour
+	float step <- 1200 #seconds parameter: "Step"; //86400 for a day, 3600 for an hour
 	float simulated_days <- 1 #days parameter: "Simulated_days";
 	float experiment_init_time;
 	

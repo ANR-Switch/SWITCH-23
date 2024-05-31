@@ -15,7 +15,7 @@ Afin de modifier un fichier, il faut donc : Modifier le fichier source dans IN p
 
 #### Contenu de IN :
 
-- **BATIMENT.xxx** : sont les fichiers shapefiles des bâtiments à récupérer dans la BD Topo.
+- **BATIMENT.XXX** : sont les fichiers shapefiles des bâtiments à récupérer dans la BD Topo.
 - **TRONCON_DE_ROUTE.XXX** : sont les fichiers shapefile des routes à récupérer dans la BD topo.
 - **EMD_depl** : est le fichier déplacement de la base de donnée EMD (enquête ménage déplacement).
 - **EMD_pers** : est le fichier personne de la base de donnée EMD.
